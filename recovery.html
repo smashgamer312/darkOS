@@ -4,69 +4,101 @@
 <meta charset="UTF-8">
 <title>darkOS Recovery</title>
 <style>
-    body {
-        background: #000;
-        color: #0f0;
-        font-family: monospace;
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    #terminal {
-        width: 90%;
-        height: 90%;
-        background: #000;
-        border: 2px solid #0f0;
-        padding: 10px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        box-sizing: border-box;
-    }
-    button {
-        margin-top: 10px;
-        background: #0f0;
-        color: #000;
-        border: none;
-        padding: 5px 10px;
-        font-family: monospace;
-        cursor: pointer;
-    }
+body {
+    background: #000;
+    color: #0f0;
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    cursor: none; /* скрываем курсор */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#terminal {
+    width: 90%;
+    height: 90%;
+    background: #000;
+    border: 2px solid #0f0;
+    padding: 10px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+}
 </style>
 </head>
 <body>
 <div id="terminal"></div>
-<div style="position: fixed; bottom: 10px; left: 10px;">
-    <button id="restoreCoreBtn">Восстановить core.js</button>
-    <button id="restoreShellBtn">Восстановить shell.css</button>
-</div>
 
 <script>
-const term = document.getElementById("terminal");
+const terminal = document.getElementById("terminal");
 
-function log(text) {
-    term.textContent += text + "\n";
-    term.scrollTop = term.scrollHeight;
+// Данные меню
+const sections = [
+  { name: "Восстановление", items: ["core.js", "shell.css"] },
+  { name: "Функции", items: ["boot to darkOS", "Перезагрузка recovery"] }
+];
+
+let currentSection = 0;
+let currentItem = 0;
+
+// URL для реального скачивания
+const urlMap = {
+    "core.js": "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/core.js",
+    "shell.css": "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/shell.css"
+};
+
+// Вывод меню
+function renderMenu() {
+  terminal.innerHTML = "";
+  sections.forEach((section, si) => {
+    terminal.innerHTML += `--- ${section.name} ---\n`;
+    section.items.forEach((item, ii) => {
+      const active = (si===currentSection && ii===currentItem) ? "[*]" : "[ ]";
+      terminal.innerHTML += `${active} ${item}\n`;
+    });
+    terminal.innerHTML += "\n";
+  });
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
-function fakeProcess(lines, callback) {
-    let i = 0;
-    const interval = setInterval(() => {
-        log(lines[i]);
-        i++;
-        if (i >= lines.length) {
-            clearInterval(interval);
-            callback && callback();
-        }
-    }, 500); // задержка между строками
+// Начальная отрисовка
+renderMenu();
+
+// Управление стрелками
+document.addEventListener("keydown", e => {
+  const items = sections[currentSection].items.length;
+  if(e.key === "ArrowDown") currentItem = (currentItem+1)%items;
+  if(e.key === "ArrowUp") currentItem = (currentItem-1+items)%items;
+  if(e.key === "ArrowRight") { currentSection=(currentSection+1)%sections.length; currentItem=0; }
+  if(e.key === "ArrowLeft") { currentSection=(currentSection-1+sections.length)%sections.length; currentItem=0; }
+  if(e.key === "Enter") selectItem();
+  renderMenu();
+});
+
+// Фейковое восстановление файла
+function fakeRecovery(filename, callback) {
+  const lines = [
+    `Creating ${filename}...`,
+    "Writing core functions...",
+    "Initializing UI elements...",
+    "Finalizing..."
+  ];
+  let i=0;
+  const interval = setInterval(() => {
+    if(i>=lines.length) { clearInterval(interval); callback && callback(); return; }
+    terminal.innerHTML += lines[i] + "\n";
+    terminal.scrollTop = terminal.scrollHeight;
+    i++;
+  }, 600);
 }
 
+// Скачивание файла с GitHub
 function fetchAndDownload(url, filename) {
     fetch(url)
         .then(res => {
-            if (!res.ok) throw new Error("Ошибка загрузки");
+            if(!res.ok) throw new Error("Ошибка загрузки");
             return res.blob();
         })
         .then(blob => {
@@ -75,49 +107,27 @@ function fetchAndDownload(url, filename) {
             a.download = filename;
             a.click();
             URL.revokeObjectURL(a.href);
-            log(filename + " успешно скачан!");
+            terminal.innerHTML += `${filename} успешно скачан!\n\n`;
         })
         .catch(err => {
-            log("Ошибка: " + err.message);
+            terminal.innerHTML += `Ошибка: ${err.message}\n\n`;
         });
 }
 
-function restoreCore() {
-    fakeProcess([
-        "=== darkOS Recovery ===",
-        "Поиск core.js...",
-        "Файл не найден",
-        "Подключение к GitHub...",
-        "Скачивание core.js...",
-        "Проверка контрольной суммы...",
-        "Подготовка к созданию файла..."
-    ], () => {
-        fetchAndDownload(
-            "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/core.js",
-            "core.js"
-        );
-    });
+// Выполнение выбранного пункта
+function selectItem() {
+  const item = sections[currentSection].items[currentItem];
+  if(item === "core.js" || item === "shell.css") {
+      terminal.innerHTML += `\nВосстанавливаем ${item}...\n`;
+      fakeRecovery(item, () => fetchAndDownload(urlMap[item], item));
+  } else if(item === "boot to darkOS") {
+      terminal.innerHTML += "\nЗагрузка darkOS...\n";
+      setTimeout(()=>location.href="main.html", 500);
+  } else if(item === "Перезагрузка recovery") {
+      terminal.innerHTML += "\nПерезагрузка recovery...\n";
+      setTimeout(()=>location.reload(), 500);
+  }
 }
-
-function restoreShell() {
-    fakeProcess([
-        "=== darkOS Recovery ===",
-        "Поиск shell.css...",
-        "Файл не найден",
-        "Подключение к GitHub...",
-        "Скачивание shell.css...",
-        "Проверка контрольной суммы...",
-        "Создание файла..."
-    ], () => {
-        fetchAndDownload(
-            "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/shell.css",
-            "shell.css"
-        );
-    });
-}
-
-document.getElementById("restoreCoreBtn").addEventListener("click", restoreCore);
-document.getElementById("restoreShellBtn").addEventListener("click", restoreShell);
 </script>
 </body>
 </html>

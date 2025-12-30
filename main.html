@@ -179,6 +179,38 @@ function loadJS(src) {
   </div>
 </div>
 
+<div id="loadingOverlay" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: monospace;
+    font-size: 24px;
+    opacity: 1;
+    transition: opacity 0.5s;
+    z-index: 9999;
+">
+    Loading libs...
+    Waiting for core signal..
+</div>
+
+<script>
+    const overlay = document.getElementById("loadingOverlay");
+
+    setTimeout(() => {
+        overlay.style.opacity = "0"; // плавное исчезновение
+        setTimeout(() => {
+            overlay.remove(); // удаляем элемент после анимации
+        }, 250); // время совпадает с transition
+    }, 500); // через 2.5 секунды скрываем
+</script>
+
 </body>
 </html>
 
