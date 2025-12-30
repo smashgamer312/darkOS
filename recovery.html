@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>darkOS Recovery</title>
+<style>
+    body {
+        margin: 0;
+        background: #000;
+        color: #0f0;
+        font-family: monospace;
+    }
+    #term {
+        padding: 10px;
+        height: 90vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    #controls {
+        padding: 10px;
+        border-top: 1px solid #0f0;
+    }
+    button {
+        background: #000;
+        color: #0f0;
+        border: 1px solid #0f0;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-family: monospace;
+    }
+    button:hover {
+        background: #0f0;
+        color: #000;
+    }
+</style>
+</head>
+<body>
+
+<div id="term"></div>
+
+<div id="controls">
+    <button onclick="restoreCore()">Восстановить core.js</button>
+    <button onclick="restoreShell()">Восстановить shell.css</button>
+</div>
+
+<script>
+const term = document.getElementById("term");
+
+function log(text, delay = 0) {
+    setTimeout(() => {
+        term.textContent += text + "\n";
+        term.scrollTop = term.scrollHeight;
+    }, delay);
+}
+
+log("darkOS Recovery Environment");
+log("Status: SYSTEM DAMAGED");
+log("Waiting for user action...\n");
+
+function fakeProcess(lines, callback) {
+    let i = 0;
+    function next() {
+        if (i < lines.length) {
+            log(lines[i]);
+            i++;
+            setTimeout(next, 400);
+        } else {
+            callback();
+        }
+    }
+    next();
+}
+
+function download(url, filename) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+}
+
+function restoreCore() {
+    term.textContent += "\n=== core.js recovery ===\n";
+    fakeProcess([
+        "Searching for core.js...",
+        "File not found",
+        "Connecting to GitHub...",
+        "Downloading source...",
+        "Verifying checksum...",
+        "Preparing output..."
+    ], () => {
+        download(
+            "https://raw.githubusercontent.com/ТВОЙ_НИК/ТВОЙ_РЕПО/main/system/core.js",
+            "core.js"
+        );
+        log("core.js downloaded");
+        log("Place file into: system/core.js\n");
+    });
+}
+
+function restoreShell() {
+    term.textContent += "\n=== shell.css recovery ===\n";
+    fakeProcess([
+        "Scanning styles...",
+        "shell.css missing",
+        "Fetching from repository...",
+        "Rebuilding file...",
+        "Finalizing..."
+    ], () => {
+        download(
+            "https://raw.githubusercontent.com/ТВОЙ_НИК/ТВОЙ_РЕПО/main/system/shell.css",
+            "shell.css"
+        );
+        log("shell.css downloaded");
+        log("Place file into: system/shell.css\n");
+    });
+}
+</script>
+
+</body>
+</html>
+
