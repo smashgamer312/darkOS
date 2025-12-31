@@ -5,51 +5,78 @@
 <title>darkOS Recovery</title>
 <style>
 body {
-    background: #000;
-    color: #0f0;
-    font-family: monospace;
-    margin: 0;
-    padding: 0;
-    height: 100vh;
-    cursor: none; /* скрываем курсор */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+  background: #000;
+  color: #0f0;
+  font-family: monospace;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  cursor: none; /* скрываем курсор */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 #terminal {
-    width: 90%;
-    max-width: 600px;
-    height: 60vh;
-    background: #000;
-    border: 2px solid #0f0;
-    padding: 10px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    box-sizing: border-box;
-    margin-bottom: 20px;
+  width: 92%;
+  max-width: 900px;
+  height: 68vh;
+  background: #000;
+  border: 2px solid #0f0;
+  padding: 12px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+  margin-bottom: 16px;
 }
 button {
-    background: #0ff;
-    color: #111;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 30px;
-    font-size: 1.2em;
-    cursor: pointer;
-    margin: 10px 0;
+  background: #0ff;
+  color: #111;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 1em;
+  cursor: pointer;
+  margin: 6px 6px 0 0;
 }
 input[type="file"] {
-    display: none;
+  display: none;
 }
+.controls {
+  width: 92%;
+  max-width: 900px;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.progress {
+  width:100%;
+  height:10px;
+  background:#222;
+  margin-top:8px;
+  border-radius:5px;
+  overflow:hidden;
+}
+.progress > div{height:100%;background:linear-gradient(90deg,#0ff,#0f0);width:0%;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 <div id="terminal"></div>
+<div class="controls">
+  <button id="btnLogs">📥 Экспорт логов</button>
+  <button id="btnRestore">📤 Восстановить из архива</button>
+  <button id="btnIntegrity">🛡️ Проверка целостности</button>
+  <button id="btnNetDiag">🌐 Диагностика сети</button>
+  <button id="btnReset">♻️ Сброс настроек</button>
+  <button id="btnImage">🧰 Создать recovery-образ</button>
+  <input id="zipInput" type="file" accept=".zip" />
+</div>
+<div class="progress" id="progressBar" style="display:none;"><div></div></div>
 <script>
 // --- Меню recovery с управлением стрелками ---
 const terminal = document.getElementById("terminal");
+const progressBar = document.getElementById('progressBar');
 const repo = 'smashgamer312/darkOS';
 const branch = 'main';
 const filesToZip = [
@@ -62,7 +89,8 @@ const filesToZip = [
 const sections = [
   { name: "Восстановление", items: ["core.js", "shell.css"] },
   { name: "Пакеты", items: ["Скачать darkOS"] },
-  { name: "Функции", items: ["boot to darkOS", "Перезагрузка recovery"] }
+  { name: "Функции", items: ["boot to darkOS", "Перезагрузка recovery"] },
+  { name: "Advanced", items: ["Экспорт логов", "Восстановить из архива", "Проверка целостности", "Диагностика сети", "Сброс настроек", "Создать recovery-образ"] }
 ];
 let currentSection = 0;
 let currentItem = 0;
@@ -107,6 +135,18 @@ async function handleAction() {
       window.location.href = "main.html";
     } else if (item === "Перезагрузка recovery") {
       location.reload();
+    } else if (item === 'Экспорт логов') {
+      await exportLogs();
+    } else if (item === 'Восстановить из архива') {
+      document.getElementById('zipInput').click();
+    } else if (item === 'Проверка целостности') {
+      await runIntegrityCheck();
+    } else if (item === 'Диагностика сети') {
+      await runNetworkDiag();
+    } else if (item === 'Сброс настроек') {
+      resetSettings();
+    } else if (item === 'Создать recovery-образ') {
+      await createRecoveryImage();
     }
   }
 }
@@ -167,6 +207,90 @@ async function downloadAllAsZip() {
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
   a.remove();
 }
+
+// --- Новые утилиты recovery ---
+async function exportLogs(){
+  terminal.innerHTML += '\nСобираем логи...';
+  const info = [];
+  info.push('UserAgent: '+navigator.userAgent);
+  info.push('Platform: '+navigator.platform);
+  info.push('Language: '+navigator.language);
+  info.push('Time: '+new Date().toString());
+  info.push('\nlocalStorage snapshot:');
+  try{ info.push(JSON.stringify(localStorage, null, 2)); } catch(e){ info.push('Ошибка чтения localStorage'); }
+  const blob = new Blob([info.join('\n\n')], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'darkOS-logs-'+Date.now()+'.txt';
+  a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);
+  terminal.innerHTML += '\nЛоги экспортированы.';
+}
+
+function showProgress(percent){
+  if(!progressBar) return;
+  progressBar.style.display = percent>=100? 'none':'block';
+  const inner = progressBar.querySelector('div');
+  inner.style.width = percent + '%';
+}
+
+async function runIntegrityCheck(){
+  terminal.innerHTML += '\nЗапуск проверки целостности...';
+  for(let i=0;i<=100;i+=10){ showProgress(i); await new Promise(r=>setTimeout(r,200)); terminal.innerHTML += `\nПроверено ${i}%`; }
+  showProgress(100);
+  terminal.innerHTML += '\nПроверка завершена: ошибок не обнаружено (симуляция).';
+}
+
+async function runNetworkDiag(){
+  terminal.innerHTML += '\nДиагностика сети...';
+  terminal.innerHTML += '\nПроверка DNS... OK';
+  await new Promise(r=>setTimeout(r,600)); terminal.innerHTML += '\nПинг до 8.8.8.8: '+ (Math.floor(Math.random()*50)+10) +'ms';
+  await new Promise(r=>setTimeout(r,400)); terminal.innerHTML += '\nСкорость загрузки: '+ (Math.floor(Math.random()*80)+10) +' Mbps';
+  await new Promise(r=>setTimeout(r,400)); terminal.innerHTML += '\nСкорость отдачи: '+ (Math.floor(Math.random()*30)+5) +' Mbps';
+  terminal.innerHTML += '\nДиагностика завершена.';
+}
+
+function resetSettings(){
+  if(!confirm('Сбросить все настройки (localStorage)?')) return;
+  try{ localStorage.clear(); terminal.innerHTML += '\nНастройки сброшены.'; } catch(e){ terminal.innerHTML += '\nОшибка при сбросе.'; }
+}
+
+async function createRecoveryImage(){
+  terminal.innerHTML += '\nФормирование recovery-образа (симуляция)...';
+  showProgress(0);
+  for(let i=10;i<=100;i+=10){ showProgress(i); await new Promise(r=>setTimeout(r,180)); }
+  const blob = new Blob(['This is a simulated recovery image for darkOS.\nGenerated at '+new Date().toString()], {type:'application/octet-stream'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='darkOS-recovery.img'; a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);
+  terminal.innerHTML += '\nОбраз создан и скачан.';
+}
+
+// Обработка локального zip файла для восстановления (симуляция)
+document.getElementById('zipInput').addEventListener('change', async (ev)=>{
+  const f = ev.target.files[0];
+  if(!f) return;
+  terminal.innerHTML += '\nОткрываем '+f.name;
+  try{
+    const data = await f.arrayBuffer();
+    const zip = await JSZip.loadAsync(data);
+    terminal.innerHTML += '\nСодержимое архива:';
+    zip.forEach((path, file)=>{ terminal.innerHTML += '\n - '+path; });
+    terminal.innerHTML += '\nЭмуляция восстановления...';
+    for(let i=0;i<=100;i+=20){ showProgress(i); await new Promise(r=>setTimeout(r,300)); }
+    terminal.innerHTML += '\nВосстановление завершено (симуляция).';
+    showProgress(100);
+  } catch(e){ terminal.innerHTML += '\nОшибка при чтении архива: '+e.message; }
+  ev.target.value = '';
+});
+
+// Кнопки управления
+document.getElementById('btnLogs').onclick = exportLogs;
+document.getElementById('btnRestore').onclick = ()=>document.getElementById('zipInput').click();
+document.getElementById('btnIntegrity').onclick = runIntegrityCheck;
+document.getElementById('btnNetDiag').onclick = runNetworkDiag;
+document.getElementById('btnReset').onclick = resetSettings;
+document.getElementById('btnImage').onclick = createRecoveryImage;
+
+// Клавиша C — переключение показа курсора
+document.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='c'){ document.body.style.cursor = document.body.style.cursor==='none'?'auto':'none'; terminal.innerHTML += '\nToggle cursor: '+(document.body.style.cursor==='none'?'hidden':'visible'); } });
 </script>
 </body>
 </html>

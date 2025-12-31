@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>dark.os</title>
 <audio id="bootSound" src="system/sounds/boot.mp3" preload="auto"></audio>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 
@@ -157,13 +157,9 @@ function loadJS(src) {
 </head>
 <body>
 
-<!-- BOOT -->
-
-<!-- Новогоднее поздравление -->
 <div id="nyGreeting" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;font-size:2em;color:#fff;text-shadow:0 0 10px #0ff,0 0 20px #0ff;background:rgba(0,0,0,0.5);padding:10px 30px;border-radius:20px;display:none;">
 </div>
 
-<!-- Снежинки -->
 <style>
 .snowflake {
   position: fixed;
@@ -232,7 +228,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
-<!-- SYSTEM -->
 <div id="system" class="hidden">
   <div id="desktop"></div>
 
