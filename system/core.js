@@ -323,6 +323,63 @@ try {
   };
 } catch(e){ window.APP_LIST["calc"] = null; }
 
+// ======== MUSIC PLAYER APP ========
+try {
+  window.APP_LIST["music"] = {
+    runCMD: function() {
+      const win = document.createElement("div");
+      win.className = "window";
+      win.style.zIndex = ++zIndex;
+      win.innerHTML = `
+        <div class="window-header">
+          <span>Музыка</span>
+          <span class="close">✖</span>
+        </div>
+        <div class="window-content" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="playBtn">▶</button>
+            <button id="prevBtn">⟲</button>
+            <button id="nextBtn">⟳</button>
+            <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" style="width:120px;">
+            <button id="shuffleBtn">Shuffle</button>
+          </div>
+          <input type="file" id="musicFiles" accept="audio/*" multiple>
+          <div id="playlist" style="overflow:auto;max-height:200px;border:1px solid #ccc;padding:6px;background:#fafafa;color:#000;"></div>
+        </div>
+      `;
+      const header = win.querySelector(".window-header");
+      const close = win.querySelector(".close");
+      close.onclick = () => win.remove();
+      let drag=false, offsetX=0, offsetY=0;
+      header.onmousedown=(e)=>{ drag=true; offsetX=e.clientX-win.offsetLeft; offsetY=e.clientY-win.offsetTop; zIndex++; win.style.zIndex=zIndex; };
+      document.onmousemove=(e)=>{ if(drag){ win.style.left=e.clientX-offsetX+"px"; win.style.top=e.clientY-offsetY+"px"; } };
+      document.onmouseup=()=>{ drag=false; };
+      const filesInput = win.querySelector('#musicFiles');
+      const playlistDiv = win.querySelector('#playlist');
+      const playBtn = win.querySelector('#playBtn');
+      const prevBtn = win.querySelector('#prevBtn');
+      const nextBtn = win.querySelector('#nextBtn');
+      const vol = win.querySelector('#vol');
+      const shuffleBtn = win.querySelector('#shuffleBtn');
+      const audio = document.createElement('audio');
+      let tracks = [];
+      let current = -1;
+      let isPlaying = false;
+      let shuffle = false;
+      function renderPlaylist(){ playlistDiv.innerHTML=''; tracks.forEach((t,i)=>{ const d=document.createElement('div'); d.textContent=(i===current?'> ':'   ')+t.name; d.style.cursor='pointer'; d.onclick=()=>{ playIndex(i); }; playlistDiv.appendChild(d); }); }
+      function playIndex(i){ if(i<0 || i>=tracks.length) return; current = i; audio.src = tracks[i].url; audio.play(); isPlaying=true; playBtn.textContent='⏸'; renderPlaylist(); }
+      filesInput.onchange = ()=>{ const files = Array.from(filesInput.files); files.forEach(f=>{ const url = URL.createObjectURL(f); tracks.push({name:f.name,url}); }); if(current===-1 && tracks.length) playIndex(0); renderPlaylist(); };
+      playBtn.onclick = ()=>{ if(!audio.src){ if(tracks.length) playIndex(0); return;} if(isPlaying){ audio.pause(); isPlaying=false; playBtn.textContent='▶'; } else { audio.play(); isPlaying=true; playBtn.textContent='⏸'; } };
+      prevBtn.onclick = ()=>{ if(tracks.length){ playIndex((current-1+tracks.length)%tracks.length); } };
+      nextBtn.onclick = ()=>{ if(tracks.length){ playIndex((current+1)%tracks.length); } };
+      vol.oninput = ()=>{ audio.volume = Number(vol.value); };
+      shuffleBtn.onclick = ()=>{ shuffle = !shuffle; shuffleBtn.style.opacity = shuffle?1:0.6; };
+      audio.onended = ()=>{ if(shuffle){ playIndex(Math.floor(Math.random()*tracks.length)); } else { nextBtn.onclick(); } };
+      desktop.appendChild(win);
+    }
+  };
+} catch(e){ window.APP_LIST["music"] = null; }
+
 // ======== LOAD APPS ========
 try {
   // CMD
@@ -502,6 +559,12 @@ document.getElementById("openNotepadBtn").addEventListener("click", ()=>{
   window.APP_LIST["notepad"].runCMD();
 });
 
+menu.insertAdjacentHTML("beforeend", `<button id="openMusicBtn">Музыка</button>`);
+document.getElementById("openMusicBtn").addEventListener("click", ()=>{
+  if(!window.APP_LIST["music"]) return criticalWindow("Музыкальный плеер не найден");
+  window.APP_LIST["music"].runCMD();
+});
+
 // Кнопка калькулятора
 menu.insertAdjacentHTML("beforeend", `<button id="openCalcBtn">Калькулятор</button>`);
 document.getElementById("openCalcBtn").addEventListener("click", ()=>{
@@ -544,6 +607,29 @@ window.addEventListener('DOMContentLoaded',()=>{
   };
   if(window.desktop) window.desktop.appendChild(icon);
   else document.getElementById('desktop')?.appendChild(icon);
+});
+
+// Иконка плеера на рабочем столе
+window.addEventListener('DOMContentLoaded',()=>{
+  const mIcon = document.createElement('div');
+  mIcon.style.position = 'absolute';
+  mIcon.style.left = '100px';
+  mIcon.style.top = '30px';
+  mIcon.style.width = '60px';
+  mIcon.style.height = '60px';
+  mIcon.style.display = 'flex';
+  mIcon.style.flexDirection = 'column';
+  mIcon.style.alignItems = 'center';
+  mIcon.style.justifyContent = 'center';
+  mIcon.style.cursor = 'pointer';
+  mIcon.innerHTML = `<div style="font-size:2em;">🎵</div><div style="font-size:0.8em;color:#222;">Музыка</div>`;
+  mIcon.title = 'Музыка';
+  mIcon.onclick = ()=>{
+    if(window.APP_LIST["music"]) window.APP_LIST["music"].runCMD();
+    else criticalWindow("Музыкальный плеер не найден");
+  };
+  if(window.desktop) window.desktop.appendChild(mIcon);
+  else document.getElementById('desktop')?.appendChild(mIcon);
 });
 
 document.body.classList.add("booting"); // убираем курсор
