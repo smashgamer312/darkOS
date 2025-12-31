@@ -13,120 +13,159 @@ body {
     height: 100vh;
     cursor: none; /* скрываем курсор */
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 #terminal {
     width: 90%;
-    height: 90%;
+    max-width: 600px;
+    height: 60vh;
     background: #000;
     border: 2px solid #0f0;
     padding: 10px;
     overflow-y: auto;
     white-space: pre-wrap;
     box-sizing: border-box;
+    margin-bottom: 20px;
+}
+button {
+    background: #0ff;
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 30px;
+    font-size: 1.2em;
+    cursor: pointer;
+    margin: 10px 0;
+}
+input[type="file"] {
+    display: none;
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 <div id="terminal"></div>
-
 <script>
+// --- Меню recovery с управлением стрелками ---
 const terminal = document.getElementById("terminal");
-
-// Данные меню
+const repo = 'smashgamer312/darkOS';
+const branch = 'main';
+const filesToZip = [
+  {path: 'main.html', url: `https://raw.githubusercontent.com/${repo}/${branch}/main.html`},
+  {path: 'recovery.html', url: `https://raw.githubusercontent.com/${repo}/${branch}/recovery.html`},
+  {path: 'Readme_pls.txt', url: `https://raw.githubusercontent.com/${repo}/${branch}/Readme_pls.txt`},
+  {path: 'system/core.js', url: `https://raw.githubusercontent.com/${repo}/${branch}/system/core.js`},
+  {path: 'system/shell.css', url: `https://raw.githubusercontent.com/${repo}/${branch}/system/shell.css`}
+];
 const sections = [
   { name: "Восстановление", items: ["core.js", "shell.css"] },
+  { name: "Пакеты", items: ["Скачать darkOS"] },
   { name: "Функции", items: ["boot to darkOS", "Перезагрузка recovery"] }
 ];
-
 let currentSection = 0;
 let currentItem = 0;
-
-// URL для реального скачивания
 const urlMap = {
-    "core.js": "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/core.js",
-    "shell.css": "https://raw.githubusercontent.com/smashgamer312/darkOS/main/system/shell.css"
+    "core.js": filesToZip[3].url,
+    "shell.css": filesToZip[4].url
 };
-
-// Вывод меню
+let menuMode = 'main'; // main | zip
 function renderMenu() {
   terminal.innerHTML = "";
-  sections.forEach((section, si) => {
-    terminal.innerHTML += `--- ${section.name} ---\n`;
-    section.items.forEach((item, ii) => {
-      const active = (si===currentSection && ii===currentItem) ? "[*]" : "[ ]";
-      terminal.innerHTML += `${active} ${item}\n`;
+  if(menuMode==='main') {
+    sections.forEach((section, si) => {
+      terminal.innerHTML += `--- ${section.name} ---\n`;
+      section.items.forEach((item, ii) => {
+        const active = (si===currentSection && ii===currentItem) ? "[*]" : "[ ]";
+        terminal.innerHTML += `${active} ${item}\n`;
+      });
     });
-    terminal.innerHTML += "\n";
-  });
-  terminal.scrollTop = terminal.scrollHeight;
-}
-
-// Начальная отрисовка
-renderMenu();
-
-// Управление стрелками
-document.addEventListener("keydown", e => {
-  const items = sections[currentSection].items.length;
-  if(e.key === "ArrowDown") currentItem = (currentItem+1)%items;
-  if(e.key === "ArrowUp") currentItem = (currentItem-1+items)%items;
-  if(e.key === "ArrowRight") { currentSection=(currentSection+1)%sections.length; currentItem=0; }
-  if(e.key === "ArrowLeft") { currentSection=(currentSection-1+sections.length)%sections.length; currentItem=0; }
-  if(e.key === "Enter") selectItem();
-  renderMenu();
-});
-
-// Фейковое восстановление файла
-function fakeRecovery(filename, callback) {
-  const lines = [
-    `Creating ${filename}...`,
-    "Writing core functions...",
-    "Initializing UI elements...",
-    "Finalizing..."
-  ];
-  let i=0;
-  const interval = setInterval(() => {
-    if(i>=lines.length) { clearInterval(interval); callback && callback(); return; }
-    terminal.innerHTML += lines[i] + "\n";
-    terminal.scrollTop = terminal.scrollHeight;
-    i++;
-  }, 600);
-}
-
-// Скачивание файла с GitHub
-function fetchAndDownload(url, filename) {
-    fetch(url)
-        .then(res => {
-            if(!res.ok) throw new Error("Ошибка загрузки");
-            return res.blob();
-        })
-        .then(blob => {
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(a.href);
-            terminal.innerHTML += `${filename} успешно скачан!\n\n`;
-        })
-        .catch(err => {
-            terminal.innerHTML += `Ошибка: ${err.message}\n\n`;
-        });
-}
-
-// Выполнение выбранного пункта
-function selectItem() {
-  const item = sections[currentSection].items[currentItem];
-  if(item === "core.js" || item === "shell.css") {
-      terminal.innerHTML += `\nВосстанавливаем ${item}...\n`;
-      fakeRecovery(item, () => fetchAndDownload(urlMap[item], item));
-  } else if(item === "boot to darkOS") {
-      terminal.innerHTML += "\nЗагрузка darkOS...\n";
-      setTimeout(()=>location.href="main.html", 500);
-  } else if(item === "Перезагрузка recovery") {
-      terminal.innerHTML += "\nПерезагрузка recovery...\n";
-      setTimeout(()=>location.reload(), 500);
+    terminal.innerHTML += "\nСтрелки: выбор, Enter: действие, Esc: выход";
+  } else if(menuMode==='zip') {
+    terminal.innerHTML = 'Создание zip-архива...\n';
   }
+}
+async function handleAction() {
+  if(menuMode==='main') {
+    const item = sections[currentSection].items[currentItem];
+    if (item === "Скачать darkOS") {
+      menuMode = 'zip';
+      renderMenu();
+      try {
+        await downloadAllAsZip();
+        terminal.innerHTML += '\nАрхив скачан.';
+      } catch(e) {
+        terminal.innerHTML += '\nОшибка: '+e.message;
+      }
+      setTimeout(()=>{menuMode='main';renderMenu();}, 2000);
+      return;
+    }
+    if (urlMap[item]) {
+      window.open(urlMap[item], '_blank');
+    } else if (item === "boot to darkOS") {
+      window.location.href = "main.html";
+    } else if (item === "Перезагрузка recovery") {
+      location.reload();
+    }
+  }
+}
+document.addEventListener('keydown', e => {
+  if(menuMode==='main') {
+    if (e.key === 'ArrowDown') {
+      currentItem++;
+      if (currentItem >= sections[currentSection].items.length) currentItem = 0;
+      renderMenu();
+    } else if (e.key === 'ArrowUp') {
+      currentItem--;
+      if (currentItem < 0) currentItem = sections[currentSection].items.length-1;
+      renderMenu();
+    } else if (e.key === 'ArrowLeft') {
+      currentSection = (currentSection-1+sections.length)%sections.length;
+      currentItem = 0;
+      renderMenu();
+    } else if (e.key === 'ArrowRight') {
+      currentSection = (currentSection+1)%sections.length;
+      currentItem = 0;
+      renderMenu();
+    } else if (e.key === 'Enter') {
+      handleAction();
+    }
+  } else if(menuMode==='zip') {
+    if(e.key==='Escape') {
+      menuMode = 'main';
+      renderMenu();
+    }
+  }
+});
+renderMenu();
+// --- Скачивание всех файлов и упаковка в zip ---
+async function downloadAllAsZip() {
+  terminal.innerHTML += '\nСкачиваем файлы...';
+  const zip = new JSZip();
+  let count = 0;
+  for(const file of filesToZip) {
+    try {
+      const resp = await fetch(file.url);
+      if(!resp.ok) throw new Error('Ошибка скачивания '+file.path);
+      const blob = await resp.blob();
+      zip.file(file.path, blob);
+      terminal.innerHTML += `\nДобавлен: ${file.path}`;
+      count++;
+    } catch(e) {
+      terminal.innerHTML += `\nОшибка: ${file.path}`;
+    }
+  }
+  terminal.innerHTML += '\nСоздаём архив...';
+  const content = await zip.generateAsync({type:"blob"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = 'darkOS-all.zip';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  a.remove();
 }
 </script>
 </body>

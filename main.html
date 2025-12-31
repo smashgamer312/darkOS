@@ -158,6 +158,73 @@ function loadJS(src) {
 <body>
 
 <!-- BOOT -->
+
+<!-- Новогоднее поздравление -->
+<div id="nyGreeting" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;font-size:2em;color:#fff;text-shadow:0 0 10px #0ff,0 0 20px #0ff;background:rgba(0,0,0,0.5);padding:10px 30px;border-radius:20px;display:none;">
+</div>
+
+<!-- Снежинки -->
+<style>
+.snowflake {
+  position: fixed;
+  top: -40px;
+  color: #fff;
+  font-size: 2em;
+  pointer-events: none;
+  z-index: 99999;
+  text-shadow: 0 0 8px #0ff, 0 0 16px #0ff;
+}
+</style>
+<script>
+let snowflakeInterval = null;
+function createSnowflake() {
+  const snow = document.createElement('div');
+  snow.className = 'snowflake';
+  snow.textContent = '❄';
+  snow.style.left = Math.random() * 100 + 'vw';
+  snow.style.fontSize = (Math.random()*1.5+1) + 'em';
+  document.body.appendChild(snow);
+  let top = -40;
+  const speed = Math.random()*2+1;
+  const drift = (Math.random()-0.5)*2;
+  function fall() {
+    top += speed;
+    snow.style.top = top + 'px';
+    snow.style.left = `calc(${snow.style.left} + ${drift}px)`;
+    if(top < window.innerHeight+40) requestAnimationFrame(fall);
+    else snow.remove();
+  }
+  fall();
+}
+function startSnowflakes() {
+  if(snowflakeInterval) return;
+  snowflakeInterval = setInterval(createSnowflake, 400);
+}
+function stopSnowflakes() {
+  clearInterval(snowflakeInterval);
+  snowflakeInterval = null;
+}
+function clearSnowflakes() {
+  document.querySelectorAll('.snowflake').forEach(e=>e.remove());
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) {
+    stopSnowflakes();
+  } else {
+    clearSnowflakes();
+    startSnowflakes();
+  }
+});
+startSnowflakes();
+window.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{
+    document.getElementById('nyGreeting').style.display = 'block';
+    setTimeout(()=>{
+      document.getElementById('nyGreeting').style.display = 'none';
+    }, 7000);
+  }, 2000);
+});
+</script>
 <div id="boot">
   <div class="boot-center">
     <div class="loader"></div>
@@ -196,8 +263,7 @@ function loadJS(src) {
     transition: opacity 0.5s;
     z-index: 9999;
 ">
-    Loading libs...
-    Waiting for core signal..
+    by darklight
 </div>
 
 <script>
