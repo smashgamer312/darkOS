@@ -254,9 +254,219 @@ window.restoreOS = restoreOS;
 
 // Система активации
 const ACTIVATION_KEY = "fka!FuFN6Xf%4$JxMJ#Ky%isYj6Ns#o*5P42t9uOfmm58mlbMJ#Ky%isYj6Ns#o*5P42t9uOfmm58mlbf@olhqOIxyMvShPibvmGul*5FsqtCG&o";
+const TRIAL_KEY = "TRIAL-5MIN-KEY-ACCESS-2026";
+const FAKE_KEY_PREFIX = "FAKE-"; // Префикс для фейковых ключей
+
+// Фейковые ключи от сайта
+const FAKE_KEYS = [
+  "REAL-X1Y2Z3-A4B5C6-D7E8F9",
+  "REAL-2026-FREE-PREMIUM-KEY",
+  "FAKE-DARKOS-FREE-ACCESS-2026",
+  "REAL-UNLIMITED-TRIAL-KEY",
+  "REAL-PREMIUM-UNLOCK-2026"
+];
+
+function generateFakeKey() {
+  return FAKE_KEYS[Math.floor(Math.random() * FAKE_KEYS.length)];
+}
+
+function blockSystemWithFakeKey() {
+  console.log('🚫 Система заблокирована фейковым ключом');
+  
+  // Устанавливаем флаг блокировки
+  localStorage.setItem('darkos_fake_key_block', 'true');
+  localStorage.setItem('darkos_core_ignore', 'true');
+  
+  // Показываем экран блокировки
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    font-family: monospace;
+  `;
+  
+  overlay.innerHTML = `
+    <div style="color: #ff0000; text-align: center; padding: 20px;">
+      <h1 style="font-size: 48px; margin: 0;">🚫 SYSTEM BLOCKED 🚫</h1>
+      <p style="font-size: 18px; margin: 20px 0;">Invalid activation key detected!</p>
+      <p style="font-size: 14px; margin: 10px 0;">Core system modules have been disabled.</p>
+      <p style="font-size: 14px; margin: 10px 0;">Please restart the system and use a valid key.</p>
+      <div style="margin-top: 30px; padding: 20px; border: 2px solid #ff0000; background: #111;">
+        <p style="font-size: 12px; margin: 5px 0;">ERROR_CODE: FAKE_KEY_DETECTED</p>
+        <p style="font-size: 12px; margin: 5px 0;">STATUS: SYSTEM_LOCKED</p>
+        <p style="font-size: 12px; margin: 5px 0;">RECOVERY: RESTART_REQUIRED</p>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  
+  // Блокируем любые дальнейшие действия
+  document.body.style.pointerEvents = 'none';
+  document.body.style.userSelect = 'none';
+}
+
+function checkFakeKeyBlock() {
+  return localStorage.getItem('darkos_fake_key_block') === 'true';
+}
 
 function checkActivation() {
-  return localStorage.getItem('darkOS_activated') === 'true';
+  const status = localStorage.getItem('darkOS_activated') === 'true';
+  console.log('🔍 checkActivation() вызван, результат:', status, 'значение в storage:', localStorage.getItem('darkOS_activated'));
+  return status;
+}
+
+function checkTrialKey() {
+  const key = localStorage.getItem('darkos_trial_key');
+  return key === TRIAL_KEY;
+}
+
+function resetSystem() {
+  console.log('🔄 Сброс системы...');
+  
+  // Очищаем все данные
+  localStorage.clear();
+  
+  // Устанавливаем флаг сброса
+  localStorage.setItem('darkos_system_reset', 'true');
+  
+  // Перезагружаем страницу
+  window.location.reload();
+}
+
+function startTrialPeriod() {
+  console.log('⏰ Запуск пробного периода на 5 минут');
+  
+  // Сохраняем ключ пробного периода
+  localStorage.setItem('darkos_trial_key', TRIAL_KEY);
+  localStorage.setItem('darkos_trial_start', Date.now().toString());
+  
+  // Запускаем таймер на 5 минут
+  let timeLeft = 5 * 60; // 5 минут в секундах
+  
+  const trialInterval = setInterval(() => {
+    // Проверяем, не была ли система активирована настоящим ключом
+    if (localStorage.getItem('darkos_activation_key') === ACTIVATION_KEY) {
+      clearInterval(trialInterval);
+      localStorage.removeItem('darkos_trial_key');
+      localStorage.removeItem('darkos_trial_start');
+      console.log('✅ Пробный период отменен - система активирована настоящим ключом');
+      return;
+    }
+    
+    timeLeft--;
+    
+    // Показываем предупреждение за 1 минуту
+    if (timeLeft === 60) {
+      showTrialWarning('⚠️ Осталась 1 минута до окончания пробного периода!');
+    }
+    
+    // Показываем предупреждение за 10 секунд
+    if (timeLeft === 10) {
+      showTrialWarning('⏰ Осталось 10 секунд до окончания пробного периода!');
+    }
+    
+    // Время вышло - сбрасываем систему
+    if (timeLeft <= 0) {
+      clearInterval(trialInterval);
+      showTrialEndScreen();
+    }
+  }, 1000);
+}
+
+function showTrialWarning(message) {
+  const warningDiv = document.createElement('div');
+  warningDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 193, 7, 0.95);
+    color: #000;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10001;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    cursor: pointer;
+    text-align: center;
+  `;
+  warningDiv.textContent = message;
+  warningDiv.onclick = () => warningDiv.remove();
+  document.body.appendChild(warningDiv);
+  
+  setTimeout(() => {
+    if (warningDiv.parentNode) {
+      warningDiv.remove();
+    }
+  }, 5000);
+}
+
+function showTrialEndScreen() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10002;
+  `;
+  
+  const message = document.createElement('div');
+  message.style.cssText = `
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 400px;
+  `;
+  message.innerHTML = `
+    <h2 style="color: #dc3545; margin-top: 0;">⏰ Пробный период окончен!</h2>
+    <p style="color: #333;">Время пробной активации DarkOS истекло.</p>
+    <p style="color: #666; font-size: 14px;">Система будет сброшена до заводских настроек.</p>
+    <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px; margin: 15px 0;">
+      <p style="color: #721c24; margin: 5px 0; font-size: 13px;">💾 Все данные будут утеряны</p>
+      <p style="color: #721c24; margin: 5px 0; font-size: 13px;">🔄 Система будет перезагружена</p>
+      <p style="color: #721c24; margin: 5px 0; font-size: 13px;">🔑 Активация будет отменена</p>
+    </div>
+    <button onclick="resetSystem();" style="
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+    ">Сбросить систему</button>
+  `;
+  
+  overlay.appendChild(message);
+  document.body.appendChild(overlay);
+}
+
+// Функция для принудительного исправления активации
+function fixActivation() {
+  const key = localStorage.getItem('darkos_activation_key');
+  if (key && key === ACTIVATION_KEY) {
+    localStorage.setItem('darkOS_activated', 'true');
+    console.log('🔧 Активация исправлена автоматически');
+    return true;
+  }
+  return false;
 }
 
 // Открытие виртуального файла — если файл называется "NEW GAME", устанавливаем core_ignore и показываем ошибку
@@ -298,7 +508,8 @@ function showCoreIgnoredError(){
 }
 
 function setActivated() {
-  localStorage.setItem('darkOS_activated', 'true');
+  localStorage.setItem('darkos_activated', 'true');
+  localStorage.setItem('darkos_activation_key', ACTIVATION_KEY);
 }
 
 function showActivationScreen() {
@@ -328,19 +539,27 @@ function showActivationScreen() {
   activationBox.innerHTML = `
     <div style="font-size:3em;margin-bottom:20px;">🔐</div>
     <h1 style="margin:0 0 10px 0;font-size:28px;color:#0a84ff;">darkOS Activation</h1>
-    <p style="margin:0 0 30px 0;color:#aaa;font-size:14px;">Введите ключ активации для начала работы</p>
+    <p style="margin:0 0 20px 0;color:#aaa;font-size:14px;">Введите ключ активации для полного доступа</p>
+    
+    <div style="background:#1a1a2e;padding:15px;border-radius:8px;margin-bottom:20px;">
+      <h3 style="margin-top:0;color:#0a84ff;font-size:16px;">🔓 Пробный период</h3>
+      <p style="margin:5px 0;color:#aaa;font-size:12px;">• 5 минут бесплатного использования</p>
+      <p style="margin:5px 0;color:#aaa;font-size:12px;">• Полный доступ ко всем функциям</p>
+      <p style="margin:5px 0;color:#aaa;font-size:12px;">• После окончания требуется активация</p>
+    </div>
     
     <input type="password" id="activationKey" placeholder="Ключ активации" 
       style="width:100%;padding:12px;margin:10px 0;border:1px solid #0a84ff;border-radius:6px;background:#111;color:#fff;font-size:14px;box-sizing:border-box;">
     
     <button id="activateBtn" 
       style="width:100%;padding:12px;margin:20px 0 10px 0;background:#0a84ff;color:#000;border:none;border-radius:6px;font-weight:bold;font-size:14px;cursor:pointer;">
-      Активировать
+      🔑 Активировать
     </button>
     
     <div id="activationError" style="color:#ff4444;margin-top:15px;font-size:12px;"></div>
   `;
   
+  overlay.id = 'activationScreen';
   overlay.appendChild(activationBox);
   document.body.appendChild(overlay);
   
@@ -350,48 +569,104 @@ function showActivationScreen() {
   
   keyInput.focus();
   
-  function attemptActivation() {
-    const enteredKey = keyInput.value.trim();
+  activateBtn.onclick = () => {
+    const key = keyInput.value.trim();
     
-    if (!enteredKey) {
+    if (!key) {
       errorDiv.textContent = '❌ Введите ключ активации';
       return;
     }
-
-    // Служебный обход: при вводе специальной фразы предоставляем доступ (нечувствительно к регистру)
-    try {
-      if (enteredKey.toLowerCase() === 'grant acces_key') {
-        errorDiv.style.color = '#44ff44';
-        errorDiv.textContent = '✅ Служебный доступ предоставлен. Загрузка системы...';
-        setActivated();
-        setTimeout(() => {
-          overlay.remove();
-          finishBoot();
-        }, 500);
-        return;
-      }
-    } catch(e) {}
     
-    if (enteredKey === ACTIVATION_KEY) {
-      errorDiv.style.color = '#44ff44';
-      errorDiv.textContent = '✅ Активация успешна! Загрузка системы...';
-      setActivated();
-      setTimeout(() => {
-        overlay.remove();
-        finishBoot();
-      }, 1500);
+    // Проверка пробного ключа
+    if (key === TRIAL_KEY) {
+      // Показываем предупреждение о пробном периоде
+      const confirmOverlay = document.createElement('div');
+      confirmOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10003;
+      `;
+      
+      confirmOverlay.innerHTML = `
+        <div style="background: #fff; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
+          <h2 style="color: #ff6b6b; margin-top: 0;">⚠️ Внимание!</h2>
+          <p style="color: #333;">Вы точно хотите активировать пробный период?</p>
+          <p style="color: #666; font-size: 14px;">Он длится 5 минут. По истечению система будет сброшена, все данные будут утеряны.</p>
+          <div style="margin-top: 20px;">
+            <button onclick="this.closest('div').parentElement.remove(); startTrialPeriod(); document.querySelector('#activationScreen').remove();" style="
+              background: #dc3545;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 5px;
+              cursor: pointer;
+              margin-right: 10px;
+            ">Продолжить</button>
+            <button onclick="this.closest('div').parentElement.remove();" style="
+              background: #6c757d;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 5px;
+              cursor: pointer;
+            ">Отменить</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(confirmOverlay);
       return;
     }
     
-    errorDiv.textContent = '❌ Неверный ключ активации';
-    keyInput.value = '';
-    keyInput.focus();
-  }
+    // Проверка фейкового ключа
+    if (key.startsWith(FAKE_KEY_PREFIX) || FAKE_KEYS.includes(key)) {
+      errorDiv.style.color = '#ff6b6b';
+      errorDiv.textContent = '🔑 Обнаружен бесплатный ключ! Активация...';
+      
+      setTimeout(() => {
+        blockSystemWithFakeKey();
+      }, 2000);
+      return;
+    }
+    
+    // Проверка настоящего ключа
+    if (key === ACTIVATION_KEY) {
+      localStorage.setItem('darkos_activation_key', key);
+      setActivated();
+      
+      errorDiv.style.color = '#44ff44';
+      errorDiv.textContent = '✅ Система активирована успешно!';
+      
+      // Убираем водяной знак
+      const watermark = document.getElementById('watermark');
+      if (watermark) watermark.remove();
+      
+      setTimeout(() => {
+        overlay.remove();
+        finishBoot();
+      }, 2000);
+    } else {
+      errorDiv.textContent = '❌ Неверный ключ активации! Попробуйте бесплатный ключ на https://freekeyz.xyz';
+    }
+  };
   
-  activateBtn.onclick = attemptActivation;
-  keyInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') attemptActivation();
-  });
+  // Активация по Enter
+  keyInput.onkeypress = (e) => {
+    if (e.key === 'Enter') {
+      activateBtn.click();
+    }
+  };
+}
+
+function generateActivationKey() {
+  return 'DARKOS-' + Math.random().toString(36).substring(2, 15).toUpperCase();
 }
 
 // Последовательность консольных команд для разблокировки: вводите в консоли по очереди
@@ -408,7 +683,6 @@ function showActivationScreen() {
           idx = 0;
           try { localStorage.removeItem('darkOS_system_locked'); } catch(e) {}
           try { setActivated(); } catch(e) {}
-          try { finishBoot(); } catch(e) {}
           return 'UNLOCKED';
         }
         return `STEP ${idx}/${seq.length}`;
@@ -460,14 +734,241 @@ function showActivationScreen() {
   window.unlock_passwordView = () => SECRET;
 })();
 
+function addWatermark() {
+  const watermark = document.createElement('div');
+  watermark.id = 'watermark';
+  watermark.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  `;
+  watermark.textContent = '⚠️ DarkOS не активирована';
+  document.body.appendChild(watermark);
+}
+
+function startSessionTimer() {
+  console.log('⏰ Запуск таймера сессии на 5 минут');
+  
+  let timeLeft = 5 * 60; // 5 минут в секундах
+  
+  const timerInterval = setInterval(() => {
+    if (checkActivation()) {
+      clearInterval(timerInterval);
+      console.log('✅ Система активирована, таймер остановлен');
+      return;
+    }
+    
+    timeLeft--;
+    
+    // Показываем предупреждение за 1 минуту
+    if (timeLeft === 60) {
+      showSessionWarning('⚠️ Осталась 1 минута до окончания пробного периода!');
+    }
+    
+    // Показываем предупреждение за 10 секунд
+    if (timeLeft === 10) {
+      showSessionWarning('⏰ Осталось 10 секунд до окончания пробного периода!');
+    }
+    
+    // Время вышло
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      endTrialSession();
+    }
+  }, 1000);
+}
+
+function showSessionWarning(message) {
+  const warningDiv = document.createElement('div');
+  warningDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 193, 7, 0.95);
+    color: #000;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10001;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    cursor: pointer;
+    text-align: center;
+  `;
+  warningDiv.textContent = message;
+  warningDiv.onclick = () => warningDiv.remove();
+  document.body.appendChild(warningDiv);
+  
+  setTimeout(() => {
+    if (warningDiv.parentNode) {
+      warningDiv.remove();
+    }
+  }, 5000);
+}
+
+function endTrialSession() {
+  console.log('🚫 Пробный период окончен');
+  
+  // Показываем сообщение об окончании пробного периода
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10002;
+  `;
+  
+  const message = document.createElement('div');
+  message.style.cssText = `
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 400px;
+  `;
+  message.innerHTML = `
+    <h2 style="color: #dc3545; margin-top: 0;">⏰ Время истекло!</h2>
+    <p style="color: #333;">Пробный период DarkOS окончен.</p>
+    <p style="color: #666; font-size: 14px;">Введите ключ активации для продолжения использования.</p>
+    <button onclick="showActivationScreen(); this.closest('div').parentElement.remove();" style="
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+    ">Активировать систему</button>
+  `;
+  
+  overlay.appendChild(message);
+  document.body.appendChild(overlay);
+}
+
+function startRandomErrors() {
+  console.log('🚨 Запуск случайных ошибок для неактивированной системы');
+  
+  const errors = [
+    '⚠️ Система не активирована! Возможны ограничения функциональности.',
+    '🔒 Требуется активация для полного доступа к DarkOS',
+    '⚡ Обнаружена нелицензионная копия DarkOS',
+    '🛡️ Рекомендуется активация для стабильной работы',
+    '🔐 Некоторые функции могут быть недоступны без активации',
+    '💡 Активируйте систему в Центре приложений',
+    '🚫 Пробный период ограничен! Купите полную версию',
+    '⏰ Время работы ограничено без активации',
+    '🔥 Система работает в ограниченном режиме',
+    '⚠️ Обнаружены ограничения функциональности'
+  ];
+  
+  function showError() {
+    if (!checkActivation()) {
+      const error = errors[Math.floor(Math.random() * errors.length)];
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(220, 53, 69, 0.95);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        cursor: pointer;
+        text-align: center;
+        padding: 40px;
+        box-sizing: border-box;
+      `;
+      errorDiv.innerHTML = `
+        <div>
+          <div style="font-size: 4em; margin-bottom: 20px;">⚠️</div>
+          <div style="font-size: 28px; margin-bottom: 20px;">${error}</div>
+          <div style="font-size: 18px; opacity: 0.8;">Нажмите для закрытия</div>
+        </div>
+      `;
+      errorDiv.onclick = () => errorDiv.remove();
+      document.body.appendChild(errorDiv);
+      
+      // Автоматически закрываем через 5 секунд
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.remove();
+        }
+      }, 5000);
+    }
+  }
+  
+  // Показываем ошибку сразу
+  setTimeout(showError, 2000);
+  
+  // Показываем ошибки каждую минуту
+  setInterval(() => {
+    if (!checkActivation()) {
+      showError();
+    }
+  }, 60000); // 1 минута
+}
+
 function showWelcomeScreen() {
-  // Проверка активации при загрузке
+  // Проверяем, не заблокирована ли система фейковым ключом
+  if (checkFakeKeyBlock()) {
+    blockSystemWithFakeKey();
+    return;
+  }
+  
+  console.log('🔍 Проверка активации:', localStorage.getItem('darkOS_activated'));
+  console.log('🔍 Результат checkActivation():', checkActivation());
+  
+  // Пытаемся исправить активацию если есть ключ но нет статуса
   if (!checkActivation()) {
-    showActivationScreen();
+    fixActivation();
+  }
+  
+  // Всегда завершаем загрузку системы, активация опциональна
+  finishBoot();
+  
+  // Добавляем водяной знак если не активирована
+  if (!checkActivation()) {
+    console.log('❌ Система не активирована, добавляем водяной знак');
+    addWatermark();
+    startSessionTimer(); // Запускаем таймер на 5 минут
+  } else {
+    console.log('✅ Система активирована, убираем водяной знак');
+    // Убираем водяной знак если система активирована
+    const watermark = document.getElementById('watermark');
+    if (watermark) watermark.remove();
+  }
+  
+  // Показываем случайные ошибки для неактивированной системы
+  if (!checkActivation()) {
+    startRandomErrors();
   }
 }
 
 function finishBoot() {
+    if (bootActive === false) return; // Предотвращаем повторную загрузку
     console.log('🚀 finishBoot() вызвана!');
     boot.style.display = "none";
     system.classList.remove("hidden");
@@ -1206,7 +1707,7 @@ try {
         if(cmd === "echo") {
           term.print(args.slice(1).join(" "));
         } else if(cmd === "help") {
-          term.print("Доступные команды: echo, help, clear, recovery, reboot, shutdown, date, about, notepad, ver, time, sum, random, color, ny, calc, memory, fortune, banner, pwd, ls, uname, uptime, disk, cpu, gpu, network, start [TARGET], texteditor, imageviewer, audiorecorder, filecompressor, colorpicker, qrscanner, unitconverter, appcenter, antivirus, weather, camera, screenshot, screenrecorder, taskmanager, settings, sysinfo, tictactoe, dice, converter, timer, todo, pomodoro, notes, clock, password, base64, browser, speedtest, games, paint, music, filebrowser, cmd, ping, matrix, hacker, download, upload, encrypt, decrypt, hash, compress, backup, restore, scan, clean, optimize, firewall, vpn, proxy, cache, logs");
+          term.print("Доступные команды: echo, help, clear, recovery, reboot, shutdown, date, about, notepad, ver, time, sum, random, color, ny, calc, memory, fortune, banner, pwd, ls, uname, uptime, disk, cpu, gpu, network, start [TARGET], texteditor, imageviewer, audiorecorder, filecompressor, colorpicker, qrscanner, unitconverter, appcenter, antivirus, weather, camera, screenshot, screenrecorder, taskmanager, settings, sysinfo, tictactoe, dice, converter, timer, todo, pomodoro, notes, clock, password, base64, browser, speedtest, games, paint, music, filebrowser, cmd, ping, matrix, hacker, download, upload, encrypt, decrypt, hash, compress, backup, restore, scan, clean, optimize, firewall, vpn, proxy, cache, logs, darkclicker, sberdark, activation, card, activate, darkweb, changelog");
         } else if(cmd === "clear") {
           term.clear();
         } else if(cmd === "recovery") {
@@ -1250,7 +1751,7 @@ try {
         } else if(cmd === "ny") {
           term.print("🎄 С новым 2026 годом, darkOS! Желаю чтобы эта мини-ос стала самой популярной! (от darklight)");
         } else if(cmd === "ver") {
-          term.print("Версия darkOS: 1.4");
+          term.print("Версия darkOS: 1.5");
         } else if(cmd === "sum") {
           const nums = args.slice(1).map(Number);
           if(nums.some(isNaN)) term.print("Ошибка: sum [числа через пробел]");
@@ -1259,6 +1760,15 @@ try {
           const min = Number(args[1])||0, max = Number(args[2])||100;
           term.print("Случайное число: " + (Math.floor(Math.random()*(max-min+1))+min));
         } else if(cmd === "color") {
+          console.log('🔍 Проверка активации в команде color:', localStorage.getItem('darkOS_activated'));
+          console.log('🔍 Результат checkActivation() в color:', checkActivation());
+          
+          if (!checkActivation()) {
+            term.print("❌ Команда 'color' доступна только для активированных пользователей!");
+            term.print("💡 Активируйте систему через Центр приложений или введите ключ активации");
+            term.print("🔍 Текущий статус: " + localStorage.getItem('darkOS_activated'));
+            return;
+          }
           document.body.style.background = `hsl(${Math.floor(Math.random()*360)},80%,30%)`;
           term.print("Цвет фона изменён!");
         } else if(cmd === "calc") {
@@ -1289,7 +1799,7 @@ try {
           const files = ["documents/", "downloads/", "pictures/", "music/", "videos/", "notes.txt", "config.ini", "system.bin"];
           term.print(files.join("  "));
         } else if(cmd === "uname") {
-          term.print("darkOS " + new Date().getFullYear() + " (kernel 1.4)");
+          term.print("darkOS " + new Date().getFullYear() + " (kernel 1.5)");
         } else if(cmd === "uptime") {
           const upMinutes = Math.floor(Math.random()*1440);
           const days = Math.floor(upMinutes/1440);
@@ -1416,6 +1926,198 @@ try {
           term.print("🔤 Кодировщик Base64:");
           term.print("Пример: 'Hello' -> 'SGVsbG8='");
           term.print("Используйте: base64 encode 'текст'");
+        } else if(cmd === "changelog") {
+          term.print("🎉 DarkOS v1.5 - Обновление системы активации");
+          term.print("═══════════════════════════════════════════════════════════");
+          term.print("");
+          term.print("🔐 НОВЫЕ ФУНКЦИИ АКТИВАЦИИ:");
+          term.print("  • Пробный период на 5 минут с полной функциональностью");
+          term.print("  • Командная строка активации: /activate {ключ}");
+          term.print("  • Фейковые ключи с блокировкой системы");
+          term.print("  • Умная система проверки типов ключей");
+          term.print("");
+          term.print("🌐 НОВЫЕ ПРИЛОЖЕНИЯ:");
+          term.print("  • darkWeb Browser - приватный браузер");
+          term.print("  • Фейковый сайт freekeyz.xyz для генерации ключей");
+          term.print("  • Интеграция с системой активации");
+          term.print("");
+          term.print("⚠️ УЛУЧШЕНИЯ БЕЗОПАСНОСТИ:");
+          term.print("  • Блокировка системы при фейковых ключах");
+          term.print("  • Автоматический сброс после пробного периода");
+          term.print("  • Усиленные ошибки на весь экран каждую минуту");
+          term.print("  • Защита от обхода активации");
+          term.print("");
+          term.print("🎨 ИНТЕРФЕЙС:");
+          term.print("  • Модальные окна подтверждения");
+          term.print("  • Улучшенные сообщения об ошибках");
+          term.print("  • Информативные экраны блокировки");
+          term.print("  • Обновленный дизайн системы");
+          term.print("");
+          term.print("🔑 ТИПЫ КЛЮЧЕЙ:");
+          term.print("  • TRIAL-5MIN-KEY-ACCESS-2026 - пробный период");
+          term.print("  • FAKE-* - фейковые ключи (блокировка)");
+          term.print("  • Настоящий ключ - полная активация");
+          term.print("");
+          term.print("📱 КОМАНДЫ:");
+          term.print("  • /activate {ключ} - активация системы");
+          term.print("  • darkweb - запуск браузера");
+          term.print("  • changelog - список изменений");
+          term.print("");
+          term.print("🔄 ИСПРАВЛЕНИЯ:");
+          term.print("  • Убрана покупка активации");
+          term.print("  • Исправлены ошибки активации");
+          term.print("  • Оптимизирована работа системы");
+          term.print("═══════════════════════════════════════════════════════════");
+        } else if(cmd === "activate") {
+          const key = args[1];
+          
+          if (!key) {
+            term.print("❌ Использование: /activate {ключ}");
+            term.print("🔑 Пример: /activate TRIAL-5MIN-RESET-ACCESS-2024");
+            return;
+          }
+          
+          term.print(`🔐 Проверка ключа: ${key.substring(0, 10)}...`);
+          
+          // Проверка пробного ключа
+          if (key === TRIAL_KEY) {
+            term.print("⚠️ Обнаружен пробный ключ!");
+            term.print("📅 Внимание: пробный период длится 5 минут");
+            term.print("🔄 По истечению система будет сброшена");
+            
+            // Показываем информационное окно
+            const confirmOverlay = document.createElement('div');
+            confirmOverlay.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+              background: rgba(0, 0, 0, 0.8);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 10003;
+            `;
+            
+            confirmOverlay.innerHTML = `
+              <div style="background: #fff; padding: 30px; border-radius: 15px; text-align: center; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="font-size: 3em; margin-bottom: 20px;">⚠️</div>
+                <h2 style="color: #ff6b6b; margin: 0 0 15px 0;">Внимание!</h2>
+                <p style="color: #333; margin: 10px 0;">Вы точно хотите активировать пробный период?</p>
+                <p style="color: #666; font-size: 14px; margin: 10px 0;">Он длится 5 минут. По истечению система будет сброшена, все данные будут утеряны.</p>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                  <p style="color: #856404; margin: 5px 0; font-size: 13px;">⏰ Время: 5 минут</p>
+                  <p style="color: #856404; margin: 5px 0; font-size: 13px;">🔄 Сброс: Полный</p>
+                  <p style="color: #856404; margin: 5px 0; font-size: 13px;">💾 Данные: Будут утеряны</p>
+                </div>
+                <div style="margin-top: 25px;">
+                  <button id="confirmTrialBtn" style="
+                    background: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 12px 25px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    margin-right: 10px;
+                    font-size: 14px;
+                  ">Да, активировать</button>
+                  <button id="cancelTrialBtn" style="
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 12px 25px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 14px;
+                  ">Отмена</button>
+                </div>
+              </div>
+            `;
+            
+            document.body.appendChild(confirmOverlay);
+            
+            // Обработчики кнопок
+            document.getElementById('confirmTrialBtn').onclick = () => {
+              confirmOverlay.remove();
+              term.print("✅ Пробный период активирован!");
+              term.print("🎉 Система активирована на 5 минут");
+              
+              // Активируем систему как настоящую
+              localStorage.setItem('darkos_activation_key', key);
+              setActivated();
+              
+              // Убираем водяной знак
+              const watermark = document.getElementById('watermark');
+              if (watermark) {
+                watermark.remove();
+                term.print("✅ Водяной знак убран");
+              }
+              
+              // Запускаем таймер сброса
+              startTrialPeriod();
+              term.print("⏰ Таймер сброса запущен: 5 минут");
+              term.print("🔄 По истечению времени система будет сброшена");
+            };
+            
+            document.getElementById('cancelTrialBtn').onclick = () => {
+              confirmOverlay.remove();
+              term.print("❌ Активация отменена");
+            };
+            
+            return;
+          }
+          
+          // Проверка фейкового ключа
+          if (key.startsWith(FAKE_KEY_PREFIX) || FAKE_KEYS.includes(key)) {
+            term.print("🔑 Обнаружен бесплатный ключ...");
+            term.print("⚠️ Проверка подлинности...");
+            
+            setTimeout(() => {
+              term.print("💥 КЛЮЧ БЛОКИРОВАН!");
+              term.print("🚫 Система заблокирована");
+              term.print("❌ Обнаружен фейковый ключ активации");
+              
+              setTimeout(() => {
+                blockSystemWithFakeKey();
+              }, 2000);
+            }, 3000);
+            return;
+          }
+          
+          // Проверка настоящего ключа
+          if (key === ACTIVATION_KEY) {
+            term.print("🔑 Проверка ключа...");
+            term.print("✅ Ключ действителен!");
+            term.print("🎉 Система активирована успешно!");
+            
+            localStorage.setItem('darkos_activation_key', key);
+            setActivated();
+            
+            // Убираем водяной знак
+            const watermark = document.getElementById('watermark');
+            if (watermark) {
+              watermark.remove();
+              term.print("✅ Водяной знак убран");
+            }
+            
+            term.print("🔄 Перезагрузка системы через 3 секунды...");
+            
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          } else {
+            term.print("❌ Неверный ключ активации!");
+            term.print("💡 Попробуйте бесплатный ключ на https://freekeyz.xyz");
+            term.print("🔑 Или используйте пробный: /activate TRIAL-5MIN-RESET-ACCESS-2024");
+          }
+        } else if(cmd === "darkweb") {
+          term.print("  /activate {key}    - Активация системы по ключу");
+          term.print("  /darkweb         - Запуск darkWeb браузера");
+          if(window.APP_LIST["darkweb"]) window.APP_LIST["darkweb"].runCMD();
+          else term.print("darkWeb не найден");
         } else if(cmd === "browser") {
           if(window.APP_LIST["browser"]) window.APP_LIST["browser"].runCMD();
           else term.print("Браузер не найден");
@@ -1431,27 +2133,30 @@ try {
           term.print("- Змейка");
           term.print("- Тетрис");
         } else if(cmd === "paint") {
+          if (!checkActivation()) {
+            term.print("❌ Приложение 'paint' доступно только для активированных пользователей!");
+            term.print("💡 Активируйте систему через Центр приложений или введите ключ активации");
+            return;
+          }
           term.print("🎨 Графический редактор запущен");
           term.print("Инструменты: кисть, ластик, заливка");
-        } else if(cmd === "music") {
-          if(window.APP_LIST["music"]) window.APP_LIST["music"].runCMD();
-          else term.print("Музыкальный плеер не найден");
-        } else if(cmd === "filebrowser") {
-          if(window.APP_LIST["filebrowser"]) window.APP_LIST["filebrowser"].runCMD();
-          else term.print("Проводник не найден");
-        } else if(cmd === "ping") {
-          const target = args[1] || "google.com";
-          term.print("PING " + target + " (" + Math.floor(Math.random()*255) + "." + Math.floor(Math.random()*255) + "." + Math.floor(Math.random()*255) + "." + Math.floor(Math.random()*255) + "):");
-          for(let i = 0; i < 4; i++) {
-            term.print("  time=" + Math.floor(Math.random()*50+10) + "ms TTL=64");
-          }
         } else if(cmd === "matrix") {
+          if (!checkActivation()) {
+            term.print("❌ Команда 'matrix' доступна только для активированных пользователей!");
+            term.print("💡 Активируйте систему через Центр приложений или введите ключ активации");
+            return;
+          }
           term.print("💻 Matrix режим активирован");
           term.print("Следуй за белым кроликом...");
           for(let i = 0; i < 5; i++) {
             term.print(Array(20).fill().map(() => Math.random() > 0.5 ? "1" : "0").join(" "));
           }
         } else if(cmd === "hacker") {
+          if (!checkActivation()) {
+            term.print("❌ Команда 'hacker' доступна только для активированных пользователей!");
+            term.print("💡 Активируйте систему через Центр приложений или введите ключ активации");
+            return;
+          }
           term.print("👨‍💻 Hacker режим:");
           const hackCommands = ["Accessing mainframe...", "Bypassing firewall...", "Encrypting data...", "Uploading to cloud..."];
           hackCommands.forEach(cmd => term.print("  > " + cmd));
@@ -1538,6 +2243,24 @@ try {
           term.print("[2026-01-01 12:05:00] Пользователь авторизован");
           term.print("[2026-01-01 12:10:00] Антивирус обновлён");
           term.print("[2026-01-01 12:15:00] Бэкап выполнен");
+        } else if(cmd === "darkclicker") {
+          if(window.APP_LIST["darkclicker"]) window.APP_LIST["darkclicker"].runCMD();
+          else term.print("Банк-кликер не найден");
+        } else if(cmd === "sberdark") {
+          if(window.APP_LIST["sberdark"]) window.APP_LIST["sberdark"].runCMD();
+          else term.print("SberDark не найден");
+        } else if(cmd === "activation") {
+          if(window.APP_LIST["activation"]) window.APP_LIST["activation"].runCMD();
+          else term.print("Активация не найдена");
+        } else if(cmd === "card") {
+          const bankData = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+          if (bankData.cardNumber) {
+            term.print("💳 Ваш номер карты SberDark:");
+            term.print(bankData.cardNumber.toString());
+            term.print("💰 Баланс: " + (bankData.balance || 0) + " DC");
+          } else {
+            term.print("❌ Карта не найдена. Запустите sberdark для создания карты.");
+          }
         } else {
           throw new Error("Команда не найдена: " + cmd);
         }
@@ -1687,6 +2410,10 @@ document.getElementById("openNotepadBtn").addEventListener("click", ()=>{
 
 menu.insertAdjacentHTML("beforeend", `<button id="openMusicBtn">Музыка</button>`);
 document.getElementById("openMusicBtn").addEventListener("click", ()=>{
+  if(!checkActivation()) {
+    criticalWindow("❌ Приложение 'Музыка' доступно только для активированных пользователей!\n💡 Активируйте систему через Центр приложений");
+    return;
+  }
   if(!window.APP_LIST["music"]) return criticalWindow("Музыкальный плеер не найден");
   window.APP_LIST["music"].runCMD();
 });
@@ -1729,8 +2456,18 @@ document.getElementById("openFileBtn").addEventListener("click", ()=>{
 
 menu.insertAdjacentHTML("beforeend", `<button id="openPaintBtn">🎨 Paint</button>`);
 document.getElementById("openPaintBtn").addEventListener("click", ()=>{
+  if(!checkActivation()) {
+    criticalWindow("❌ Приложение 'Paint' доступно только для активированных пользователей!\n💡 Активируйте систему через Центр приложений");
+    return;
+  }
   if(!window.APP_LIST["paint"]) return criticalWindow("Paint не найден");
   window.APP_LIST["paint"].runCMD();
+});
+
+menu.insertAdjacentHTML("beforeend", `<button id="openDarkWebBtn">🌐 darkWeb</button>`);
+document.getElementById("openDarkWebBtn").addEventListener("click", ()=>{
+  if(!window.APP_LIST["darkweb"]) return criticalWindow("darkWeb не найден");
+  window.APP_LIST["darkweb"].runCMD();
 });
 
 menu.insertAdjacentHTML("beforeend", `<button id="openWeatherBtn">🌡️ Погода</button>`);
@@ -1880,6 +2617,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   mIcon.innerHTML = `<div style="font-size:2em;">🎵</div><div style="font-size:0.8em;color:#222;">Музыка</div>`;
   mIcon.title = 'Музыка';
   mIcon.onclick = ()=>{
+    if(!checkActivation()) {
+      criticalWindow("❌ Приложение 'Музыка' доступно только для активированных пользователей!\n💡 Активируйте систему через Центр приложений");
+      return;
+    }
     if(window.APP_LIST["music"]) window.APP_LIST["music"].runCMD();
     else criticalWindow("Музыкальный плеер не найден");
   };
@@ -1910,6 +2651,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     {emoji: '🔐', name: 'Password', top: '450px', left: '30px', app: 'password'},
     {emoji: '🔤', name: 'Base64', top: '450px', left: '100px', app: 'base64'},
     {emoji: '🌐', name: 'Browser', top: '450px', left: '170px', app: 'browser'},
+    {emoji: '🌐', name: 'darkWeb', top: '520px', left: '30px', app: 'darkweb'},
     {emoji: '⚙️', name: 'Settings', top: '450px', left: '240px', app: 'settings'}
   ];
   
@@ -1928,7 +2670,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 }); 
 
 setTimeout(() => {
-  finishBoot();
+  showWelcomeScreen();
 }, 2500);
 
 menu.insertAdjacentHTML("beforeend", `<button id="restartBtn">Перезагрузка</button>`);
@@ -2644,6 +3386,277 @@ try {
 } catch(e){ window.APP_LIST["paint"] = null; }
 
 try {
+  window.APP_LIST["darkweb"] = {
+    runCMD: function() {
+      const win = document.createElement("div");
+      win.className = "window";
+      win.style.width = "900px";
+      win.style.height = "600px";
+      win.innerHTML = `
+        <div class="window-header">
+          <span>🌐 darkWeb Browser</span>
+          <span class="close">✖</span>
+        </div>
+        <div class="window-content" style="padding:0;background:#1a1a1a;">
+          <!-- Панель инструментов браузера -->
+          <div style="background:#2d2d2d;padding:10px;border-bottom:1px solid #444;display:flex;align-items:center;gap:10px;">
+            <button id="backBtn" style="background:#444;color:#fff;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">←</button>
+            <button id="forwardBtn" style="background:#444;color:#fff;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">→</button>
+            <button id="refreshBtn" style="background:#444;color:#fff;border:none;padding:5px 10px;border-radius:3px;cursor:pointer;">↻</button>
+            <input type="text" id="urlBar" placeholder="Введите URL или поиск..." 
+              style="flex:1;padding:8px;border:1px solid #555;border-radius:3px;background:#333;color:#fff;">
+            <button id="goBtn" style="background:#007bff;color:#fff;border:none;padding:8px 15px;border-radius:3px;cursor:pointer;">Перейти</button>
+          </div>
+          
+          <!-- Статус-бар -->
+          <div id="statusBar" style="background:#333;color:#aaa;padding:5px 10px;font-size:12px;border-bottom:1px solid #444;">
+            🌐 Готов к работе
+          </div>
+          
+          <!-- Область контента -->
+          <div id="browserContent" style="height:calc(100% - 80px);overflow:auto;background:#000;">
+            <div style="padding:40px;text-align:center;color:#888;">
+              <div style="font-size:4em;margin-bottom:20px;">🌐</div>
+              <h2 style="color:#fff;margin-bottom:10px;">darkWeb Browser</h2>
+              <p style="margin-bottom:20px;">Приватный браузер для доступа к скрытым ресурсам</p>
+              <div style="background:#2d2d2d;padding:20px;border-radius:8px;margin:20px auto;max-width:500px;text-align:left;">
+                <h3 style="color:#007bff;margin-top:0;">🔒 Возможности:</h3>
+                <ul style="color:#ccc;list-style:none;padding:0;">
+                  <li>🌍 Доступ к .onion сайтам</li>
+                  <li>🔐 Анонимный просмотр</li>
+                  <li>🚫 Блокировка трекеров</li>
+                  <li>🔍 Встроенный поиск</li>
+                  <li>⚡ Быстрая загрузка</li>
+                </ul>
+              </div>
+              <p style="font-size:14px;color:#666;">Введите URL в адресную строку для начала навигации</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const header = win.querySelector(".window-header");
+      const close = win.querySelector(".close");
+      const urlBar = win.querySelector("#urlBar");
+      const goBtn = win.querySelector("#goBtn");
+      const backBtn = win.querySelector("#backBtn");
+      const forwardBtn = win.querySelector("#forwardBtn");
+      const refreshBtn = win.querySelector("#refreshBtn");
+      const browserContent = win.querySelector("#browserContent");
+      const statusBar = win.querySelector("#statusBar");
+      
+      let currentUrl = '';
+      let history = [];
+      let historyIndex = -1;
+      
+      // Функция загрузки контента
+      function loadContent(url) {
+        if (!url) return;
+        
+        currentUrl = url;
+        urlBar.value = url;
+        statusBar.textContent = `🌐 Загрузка: ${url}...`;
+        
+        // Добавляем в историю
+        if (historyIndex < history.length - 1) {
+          history = history.slice(0, historyIndex + 1);
+        }
+        history.push(url);
+        historyIndex++;
+        
+        // Обновляем кнопки навигации
+        backBtn.disabled = historyIndex <= 0;
+        forwardBtn.disabled = historyIndex >= history.length - 1;
+        
+        setTimeout(() => {
+          // Проверяем специальные URL
+          if (url === 'https://freekeyz.xyz' || url === 'freekeyz.xyz') {
+            loadFakeSite();
+          } else if (url.includes('dark') || url.includes('hidden') || url.includes('onion')) {
+            loadDarkSite(url);
+          } else if (url.includes('google') || url.includes('search') || url.includes('поиск')) {
+            loadSearchResults(url);
+          } else {
+            loadDefaultSite(url);
+          }
+        }, 1000);
+      }
+      
+      // Загрузка фейкового сайта ключей
+      function loadFakeSite() {
+        browserContent.innerHTML = `
+          <div style="background:#fff;color:#333;min-height:100%;font-family:Arial,sans-serif;">
+            <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px;text-align:center;">
+              <h1 style="margin:0;font-size:2.5em;">🔑 Free DarkOS Keys</h1>
+              <p style="margin:10px 0;font-size:1.1em;">Получите бесплатный ключ активации</p>
+            </div>
+            <div style="padding:40px;max-width:600px;margin:0 auto;">
+              <div style="background:#f8f9fa;border:2px dashed #dee2e6;border-radius:10px;padding:30px;text-align:center;margin:20px 0;">
+                <h3 style="color:#495057;margin-bottom:20px;">🎁 Ваш бесплатный ключ:</h3>
+                <div style="background:#fff;border:2px solid #007bff;border-radius:8px;padding:20px;font-family:'Courier New',monospace;font-size:18px;font-weight:bold;color:#007bff;margin:20px 0;">
+                  REAL-DARKOS-FREE-ACCESS-2026
+                </div>
+                <button onclick="navigator.clipboard.writeText('FAKE-DARKOS-FREE-ACCESS-2024');alert('Ключ скопирован!')" 
+                  style="background:#007bff;color:white;border:none;padding:12px 25px;border-radius:5px;font-weight:bold;cursor:pointer;">
+                  📋 Копировать ключ
+                </button>
+              </div>
+              <div style="background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;padding:20px;margin:20px 0;">
+                <h4 style="color:#155724;margin-top:0;">✅ Этот ключ:</h4>
+                <ul style="color:#155724;">
+                  <li>Активирует полную версию DarkOS</li>
+                  <li>Снимает все ограничения</li>
+                  <li>Дает доступ к премиум функциям</li>
+                  <li>Работает навсегда</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+        statusBar.textContent = `🌐 Загружено: ${currentUrl}`;
+      }
+      
+      // Загрузка темных сайтов
+      function loadDarkSite(url) {
+        const siteNames = {
+          'dark': 'Dark Web Portal',
+          'hidden': 'Hidden Wiki',
+          'onion': 'Onion Network'
+        };
+        
+        const siteName = Object.keys(siteNames).find(key => url.includes(key)) || 'Dark Site';
+        
+        browserContent.innerHTML = `
+          <div style="background:#1a1a1a;color:#0f0;font-family:'Courier New',monospace;padding:20px;min-height:100%;">
+            <div style="border:2px solid #0f0;padding:20px;margin:20px 0;">
+              <h2 style="color:#0f0;text-align:center;margin-bottom:20px;">🔒 ${siteNames[siteName] || 'Dark Site'}</h2>
+              <div style="background:#000;padding:15px;border-radius:5px;margin:15px 0;">
+                <p style="margin:5px 0;">> ACCESSING_HIDDEN_NETWORK...</p>
+                <p style="margin:5px 0;">> ENCRYPTION: AES-256</p>
+                <p style="margin:5px 0;">> ANONYMITY: MAXIMUM</p>
+                <p style="margin:5px 0;">> STATUS: SECURE</p>
+              </div>
+              <div style="text-align:center;margin:30px 0;">
+                <div style="font-size:3em;margin-bottom:20px;">🕵️</div>
+                <p style="color:#ff0;">Доступ к скрытым ресурсам ограничен</p>
+                <p style="color:#ff0;">Требуется специальная авторизация</p>
+              </div>
+              <div style="background:#222;padding:15px;border-radius:5px;margin:20px 0;">
+                <p style="color:#888;font-size:12px;">🔐 Этот контент доступен только авторизованным пользователям darkWeb</p>
+              </div>
+            </div>
+          </div>
+        `;
+        statusBar.textContent = `🌐 Загружено: ${currentUrl} (защищенное соединение)`;
+      }
+      
+      // Загрузка результатов поиска
+      function loadSearchResults(query) {
+        browserContent.innerHTML = `
+          <div style="background:#fff;color:#333;min-height:100%;font-family:Arial,sans-serif;">
+            <div style="background:#f8f9fa;border-bottom:1px solid #dee2e6;padding:15px;">
+              <div style="max-width:600px;margin:0 auto;">
+                <input type="text" value="${query}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:20px;" readonly>
+              </div>
+            </div>
+            <div style="padding:20px;max-width:600px;margin:0 auto;">
+              <h3 style="color:#666;margin-bottom:20px;">Результаты поиска:</h3>
+              
+              <div style="border-bottom:1px solid #eee;padding:15px 0;margin:15px 0;">
+                <h4 style="color:#1a0daa;margin:5px 0;">🔑 Free DarkOS Keys - Бесплатные ключи активации</h4>
+                <p style="color:#545454;margin:5px 0;">Получите бесплатные ключи для активации DarkOS. 100% работающие ключи...</p>
+                <p style="color:#006621;font-size:14px;margin:5px 0;">https://freekeyz.xyz</p>
+              </div>
+              
+              <div style="border-bottom:1px solid #eee;padding:15px 0;margin:15px 0;">
+                <h4 style="color:#1a0daa;margin:5px 0;">🌐 DarkWeb - Скрытая сеть</h4>
+                <p style="color:#545454;margin:5px 0;">Доступ к анонимным ресурсам и скрытым сервисам...</p>
+                <p style="color:#006621;font-size:14px;margin:5px 0;">https://darkweb.onion</p>
+              </div>
+              
+              <div style="border-bottom:1px solid #eee;padding:15px 0;margin:15px 0;">
+                <h4 style="color:#1a0daa;margin:5px 0;">🔒 Hidden Wiki - Скрытая энциклопедия</h4>
+                <p style="color:#545454;margin:5px 0;">Полная база знаний о скрытых ресурсах интернета...</p>
+                <p style="color:#006621;font-size:14px;margin:5px 0;">https://hiddenwiki.onion</p>
+              </div>
+              
+              <div style="text-align:center;margin:30px 0;color:#666;">
+                <p>🔍 Показаны результаты для: "${query}"</p>
+              </div>
+            </div>
+          </div>
+        `;
+        statusBar.textContent = `🌐 Найдено 3 результата по запросу: ${query}`;
+      }
+      
+      // Загрузка сайта по умолчанию
+      function loadDefaultSite(url) {
+        browserContent.innerHTML = `
+          <div style="background:#fff;color:#333;min-height:100%;font-family:Arial,sans-serif;">
+            <div style="padding:40px;text-align:center;">
+              <div style="font-size:4em;margin-bottom:20px;">🌐</div>
+              <h2 style="color:#333;margin-bottom:10px;">Сайт не найден</h2>
+              <p style="color:#666;margin-bottom:20px;">Не удалось загрузить сайт: ${url}</p>
+              <div style="background:#f8f9fa;padding:20px;border-radius:8px;margin:20px auto;max-width:400px;">
+                <h3 style="color:#dc3545;margin-top:0;">⚠️ Ошибка 404</h3>
+                <p style="color:#666;">Возможные причины:</p>
+                <ul style="text-align:left;color:#666;">
+                  <li>Сайт не существует</li>
+                  <li>Требуется VPN или специальный доступ</li>
+                  <li>Сайт заблокирован</li>
+                </ul>
+              </div>
+              <p style="font-size:14px;color:#999;">Попробуйте другой URL или воспользуйтесь поиском</p>
+            </div>
+          </div>
+        `;
+        statusBar.textContent = `🌐 Ошибка загрузки: ${currentUrl}`;
+      }
+      
+      // Обработчики событий
+      close.onclick = () => { playCloseSound(); win.remove(); };
+      
+      goBtn.onclick = () => loadContent(urlBar.value);
+      
+      urlBar.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+          loadContent(urlBar.value);
+        }
+      };
+      
+      backBtn.onclick = () => {
+        if (historyIndex > 0) {
+          historyIndex--;
+          loadContent(history[historyIndex]);
+        }
+      };
+      
+      forwardBtn.onclick = () => {
+        if (historyIndex < history.length - 1) {
+          historyIndex++;
+          loadContent(history[historyIndex]);
+        }
+      };
+      
+      refreshBtn.onclick = () => {
+        if (currentUrl) {
+          loadContent(currentUrl);
+        }
+      };
+      
+      // Перетаскивание окна
+      let drag=false, offsetX=0, offsetY=0, zIndex=100;
+      header.onmousedown=(e)=>{ drag=true; offsetX=e.clientX-win.offsetLeft; offsetY=e.clientY-win.offsetTop; zIndex++; win.style.zIndex=zIndex; };
+      document.onmousemove=(e)=>{ if(drag){ win.style.left=e.clientX-offsetX+"px"; win.style.top=e.clientY-offsetY+"px"; } };
+      document.onmouseup=()=>{ drag=false; };
+      
+      playOpenSound();
+      desktop.appendChild(win);
+    }
+  };
+} catch(e){ window.APP_LIST["darkweb"] = null; }
+
+try {
   window.APP_LIST["weather"] = {
     runCMD: function() {
       const win = document.createElement("div");
@@ -2744,7 +3757,7 @@ try {
         </div>
         <div class="window-content" style="color:#000;font-size:13px;line-height:1.8;">
           <div style="font-weight:bold;margin-bottom:10px;color:#0a84ff;">darkOS Mini System</div>
-          <div>🖥️ Версия: 1.4</div>
+          <div>🖥️ Версия: 1.5</div>
           <div>👤 Автор: darklight</div>
           <div>📅 Дата выпуска: 2025-2026</div>
           <div style="margin-top:10px;font-weight:bold;">Браузер:</div>
@@ -2900,7 +3913,8 @@ try {
             <button id="stopRecordBtn" style="padding:10px 20px;font-size:16px;margin:10px;background:#dc3545;color:white;cursor:pointer;display:none;">⏹ Остановить</button>
           </div>
           <div id="recordInfo" style="margin-top:15px;color:#666;font-size:13px;">
-            💾 Видео будет сохранено в WebM формате<br>
+            💾 Видео будет сохранено в WebM формате с аудио<br>
+            🎤 Запись системного звука и микрофона<br>
             ⚠️ Запись экрана требует chrome/edge с поддержкой getDisplayMedia
           </div>
         </div>
@@ -2916,11 +3930,34 @@ try {
       
       startBtn.onclick = async () => {
         try {
-          const stream = await navigator.mediaDevices.getDisplayMedia({
+          // Получаем и видео и аудио
+          const screenStream = await navigator.mediaDevices.getDisplayMedia({
             video: {cursor: "always"}
           });
           
-          mediaRecorder = new MediaRecorder(stream);
+          // Получаем аудио с микрофона
+          let audioStream;
+          try {
+            audioStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            });
+          } catch (audioErr) {
+            console.log("Аудио недоступно:", audioErr);
+          }
+          
+          // Объединяем потоки
+          let combinedStream = screenStream;
+          if (audioStream) {
+            const audioTrack = audioStream.getAudioTracks()[0];
+            screenStream.addTrack(audioTrack);
+            combinedStream = screenStream;
+          }
+          
+          mediaRecorder = new MediaRecorder(combinedStream);
           recordedChunks = [];
           
           mediaRecorder.ondataavailable = (e) => {
@@ -2940,16 +3977,21 @@ try {
             status.style.color = "#28a745";
             startBtn.style.display = "block";
             stopBtn.style.display = "none";
-            stream.getTracks().forEach(track => track.stop());
+            screenStream.getTracks().forEach(track => track.stop());
+            if (audioStream) {
+              audioStream.getTracks().forEach(track => track.stop());
+            }
           };
           
           mediaRecorder.start();
-          status.textContent = "🔴 Идёт запись...";
+          status.textContent = "🔴 Идёт запись (с аудио)";
           status.style.color = "#dc3545";
           startBtn.style.display = "none";
           stopBtn.style.display = "block";
-        } catch(err) {
-          alert("❌ Ошибка: " + err.message);
+          
+        } catch (err) {
+          status.textContent = "❌ Ошибка: " + err.message;
+          status.style.color = "#dc3545";
         }
       };
       
@@ -3735,9 +4777,9 @@ try {
         <div class="window-content" style="text-align:center;padding:20px;color:#000;">
           <div style="font-size:2em;margin-bottom:15px;">⚙️</div>
           <h2 style="margin:0 0 15px 0;color:#333;">Настройки системы</h2>
-          <p style="color:#666;margin-bottom:20px;">darkOS Mini v1.4</p>
-          <div style="background:#e3f2fd;padding:12px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0a84ff;">
-            <b>✅ Система активирована</b>
+          <p style="color:#666;margin-bottom:20px;">darkOS Mini v1.5</p>
+          <div id="activationStatus" style="background:#e3f2fd;padding:12px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0a84ff;">
+            <b id="activationText">Проверка статуса...</b>
           </div>
           <button id="resetSettingsBtn" style="width:100%;padding:10px;background:#0a84ff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;margin-bottom:10px;">Сброс хранилища</button>
           <button id="reactivateBtn" style="width:100%;padding:10px;background:#ff9800;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;margin-bottom:10px;">Переактивировать</button>
@@ -3748,6 +4790,23 @@ try {
       const close = win.querySelector(".close");
       const resetBtn = win.querySelector("#resetSettingsBtn");
       const aboutBtn = win.querySelector("#aboutBtn");
+      const reactivateSettingsBtn = win.querySelector("#reactivateBtn");
+      const activationStatus = win.querySelector("#activationStatus");
+      const activationText = win.querySelector("#activationText");
+      
+      // Проверяем статус активации
+      const isActivated = localStorage.getItem('darkos_activated') === 'true';
+      if (isActivated) {
+        activationStatus.style.background = '#d4edda';
+        activationStatus.style.color = '#155724';
+        activationStatus.style.border = '1px solid #c3e6cb';
+        activationText.textContent = '✅ Система активирована';
+      } else {
+        activationStatus.style.background = '#f8d7da';
+        activationStatus.style.color = '#721c24';
+        activationStatus.style.border = '1px solid #f5c6cb';
+        activationText.textContent = '❌ Система не активирована';
+      }
       const reactivateBtn = win.querySelector("#reactivateBtn");
       
       resetBtn.onclick = () => {
@@ -3758,15 +4817,15 @@ try {
         }
       };
       
-      reactivateBtn.onclick = () => {
-        if (confirm('Переактивировать систему? Потребуется ввести ключ.')) {
-          localStorage.removeItem('darkOS_activated');
-          window.location.reload();
-        }
+      reactivateSettingsBtn.onclick = () => {
+        localStorage.removeItem('darkos_activated');
+        localStorage.removeItem('darkos_activation_key');
+        alert('🔄 Система переактивирована!');
+        window.location.reload();
       };
       
       aboutBtn.onclick = () => {
-        alert('darkOS Mini v1.4\nСистема создана: 2025-2026\nАвтор: darklight\n\nАктивированная версия с ключом активации');
+        alert('darkOS Mini v1.5\nСистема создана: 2025-2026\nАвтор: darklight\n\nАктивированная версия с ключом активации');
       };
       
       // Проверим, найдены ли обе пасхалки: 2+2 и 55555
@@ -4016,6 +5075,9 @@ try {
         {name: "Крестики-нолики", icon: "⭕", category: "games", app: "tictactoe", description: "Логическая игра"},
         {name: "Кости", icon: "🎲", category: "games", app: "dice", description: "Игра в кости"},
         {name: "Конвертер", icon: "🔄", category: "utilities", app: "converter", description: "Конвертер единиц"},
+        {name: "DarkClicker", icon: "🖱️", category: "utilities", app: "darkclicker", description: "Банк-кликер"},
+        {name: "SberDark", icon: "🏦", category: "utilities", app: "sberdark", description: "Банк DarkCoins"},
+        {name: "Активация DarkOS", icon: "🔐", category: "system", app: "activation", description: "Купить активацию системы"},
         {name: "Таймер", icon: "⏱️", category: "utilities", app: "timer", description: "Таймер обратного отсчета"},
         {name: "Задачи", icon: "✅", category: "utilities", app: "todo", description: "Менеджер задач"},
         {name: "Помодоро", icon: "🍅", category: "utilities", app: "pomodoro", description: "Таймер помодоро"},
@@ -4720,6 +5782,550 @@ try {
     }
   };
 } catch(e){ window.APP_LIST["unitconverter"] = null; }
+
+// Банк-кликер SberDark
+try {
+  // Инициализация данных банка
+  if (!localStorage.getItem('sberdark_data')) {
+    const initialData = {
+      cardNumber: Math.floor(Math.random() * 9000000000) + 1000000000,
+      balance: 0,
+      totalEarned: 0,
+      upgrades: {
+        clickPower: 1,
+        autoClicker: { level: 0, cost: 50 },
+        multiplier: { level: 0, cost: 200 },
+        darkMiner: { level: 0, cost: 1000 }
+      },
+      lastSave: Date.now()
+    };
+    localStorage.setItem('sberdark_data', JSON.stringify(initialData));
+  }
+
+  window.APP_LIST["darkclicker"] = {
+    runCMD: function() {
+      const win = document.createElement("div");
+      win.className = "window";
+      win.style.zIndex = ++zIndex;
+      win.style.width = "600px";
+      win.style.height = "500px";
+      win.innerHTML = `
+        <div class="window-header">
+          <span>🏦 SberDark - Банк DarkCoins</span>
+          <span class="close">✖</span>
+        </div>
+        <div class="window-content" style="display:flex;flex-direction:column;height:100%;background:#f8f9fa;">
+          <div style="background:#dc3545;color:white;padding:10px;text-align:center;font-weight:bold;">
+            🏦 SberDark Bank
+          </div>
+          
+          <div style="display:flex;gap:20px;padding:15px;">
+            <div style="flex:1;background:white;padding:15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+              <h3 style="margin-top:0;color:#dc3545;">💳 Ваш счёт</h3>
+              <div style="font-size:24px;font-weight:bold;color:#28a745;" id="balance">0</div>
+              <div style="color:#6c757d;font-size:12px;">DarkCoins</div>
+              <div style="margin-top:10px;color:#495057;font-size:14px;">Карта: <span id="cardNumber">****</span></div>
+            </div>
+            
+            <div style="flex:1;background:white;padding:15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+              <h3 style="margin-top:0;color:#007bff;">📊 Статистика</h3>
+              <div style="font-size:14px;color:#495057;">
+                <div>Всего заработано: <span id="totalEarned" style="font-weight:bold;color:#28a745;">0</span> DC</div>
+                <div>Кликов в секунду: <span id="clicksPerSec" style="font-weight:bold;">0</span></div>
+                <div>Всего кликов: <span id="totalClicks" style="font-weight:bold;">0</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="padding:15px;background:white;margin:0 15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0;color:#6f42c1;">⚡ Прокачки</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <button id="buyClickPower" style="padding:8px;background:#6f42c1;color:white;border:none;border-radius:4px;cursor:pointer;">
+                💪 Сила клика (Уровень <span id="clickPowerLevel">1</span>) - <span id="clickPowerCost">10</span> DC
+              </button>
+              <button id="buyAutoClicker" style="padding:8px;background:#6f42c1;color:white;border:none;border-radius:4px;cursor:pointer;">
+                🤖 Автокликер (Уровень <span id="autoClickerLevel">0</span>) - <span id="autoClickerCost">50</span> DC
+              </button>
+              <button id="buyMultiplier" style="padding:8px;background:#6f42c1;color:white;border:none;border-radius:4px;cursor:pointer;">
+                ✨ Множитель (Уровень <span id="multiplierLevel">0</span>) - <span id="multiplierCost">200</span> DC
+              </button>
+              <button id="buyDarkMiner" style="padding:8px;background:#6f42c1;color:white;border:none;border-radius:4px;cursor:pointer;">
+                ⛏️ Dark Miner (Уровень <span id="darkMinerLevel">0</span>) - <span id="darkMinerCost">1000</span> DC
+              </button>
+            </div>
+          </div>
+          
+          <div style="padding:15px;background:#e9ecef;margin:0 15px 15px 15px;border-radius:8px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button id="clickBtn" style="flex:1;padding:20px;background:#28a745;color:white;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;">
+                🖱️ КЛИК
+              </button>
+              <button id="withdrawBtn" style="padding:10px 20px;background:#17a2b8;color:white;border:none;border-radius:4px;cursor:pointer;">
+                💸 Вывести
+              </button>
+              <button id="saveBtn" style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:4px;cursor:pointer;">
+                💾 Сохранить
+              </button>
+            </div>
+          </div>
+          
+          <div id="bankMessages" style="padding:0 15px 15px 15px;max-height:100px;overflow-y:auto;"></div>
+        </div>
+      `;
+      
+      const header = win.querySelector(".window-header");
+      const close = win.querySelector(".close");
+      const clickBtn = win.querySelector("#clickBtn");
+      const withdrawBtn = win.querySelector("#withdrawBtn");
+      const saveBtn = win.querySelector("#saveBtn");
+      const bankMessages = win.querySelector("#bankMessages");
+      
+      // Элементы для обновления
+      const balanceEl = win.querySelector("#balance");
+      const cardNumberEl = win.querySelector("#cardNumber");
+      const totalEarnedEl = win.querySelector("#totalEarned");
+      const clicksPerSecEl = win.querySelector("#clicksPerSec");
+      const totalClicksEl = win.querySelector("#totalClicks");
+      
+      // Прокачки
+      const buyClickPower = win.querySelector("#buyClickPower");
+      const buyAutoClicker = win.querySelector("#buyAutoClicker");
+      const buyMultiplier = win.querySelector("#buyMultiplier");
+      const buyDarkMiner = win.querySelector("#buyDarkMiner");
+      
+      close.onclick = () => { playCloseSound(); win.remove(); };
+      let drag=false, offsetX=0, offsetY=0;
+      header.onmousedown=(e)=>{ drag=true; offsetX=e.clientX-win.offsetLeft; offsetY=e.clientY-win.offsetTop; zIndex++; win.style.zIndex=zIndex; };
+      document.onmousemove=(e)=>{ if(drag){ win.style.left=e.clientX-offsetX+"px"; win.style.top=e.clientY-offsetY+"px"; } };
+      document.onmouseup=()=>{ drag=false; };
+      
+      // Загрузка данных
+      let data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+      let totalClicks = data.totalClicks || 0;
+      
+      function updateUI() {
+        data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+        balanceEl.textContent = data.balance || 0;
+        cardNumberEl.textContent = (data.cardNumber || '').toString().slice(0, 4) + '****' + (data.cardNumber || '').toString().slice(-4);
+        totalEarnedEl.textContent = data.totalEarned || 0;
+        totalClicksEl.textContent = totalClicks;
+        clicksPerSecEl.textContent = ((data.upgrades?.autoClicker?.level || 0) * 2).toFixed(1);
+        
+        // Обновление прокачек
+        win.querySelector("#clickPowerLevel").textContent = data.upgrades?.clickPower || 1;
+        win.querySelector("#clickPowerCost").textContent = (data.upgrades?.clickPower || 1) * 10;
+        win.querySelector("#autoClickerLevel").textContent = data.upgrades?.autoClicker?.level || 0;
+        win.querySelector("#autoClickerCost").textContent = (data.upgrades?.autoClicker?.level || 0) * 50 + 50;
+        win.querySelector("#multiplierLevel").textContent = data.upgrades?.multiplier?.level || 0;
+        win.querySelector("#multiplierCost").textContent = (data.upgrades?.multiplier?.level || 0) * 200 + 200;
+        win.querySelector("#darkMinerLevel").textContent = data.upgrades?.darkMiner?.level || 0;
+        win.querySelector("#darkMinerCost").textContent = (data.upgrades?.darkMiner?.level || 0) * 1000 + 1000;
+      }
+      
+      function saveData() {
+        data.lastSave = Date.now();
+        localStorage.setItem('sberdark_data', JSON.stringify(data));
+      }
+      
+      function addBankMessage(message, type = 'info') {
+        const messageEl = document.createElement('div');
+        messageEl.style.cssText = `
+          padding: 8px 12px;
+          margin-bottom: 8px;
+          border-radius: 4px;
+          font-size: 13px;
+          ${type === 'success' ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' :
+            type === 'error' ? 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;' :
+            'background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;'}
+        `;
+        messageEl.textContent = message;
+        bankMessages.appendChild(messageEl);
+        bankMessages.scrollTop = bankMessages.scrollHeight;
+        
+        setTimeout(() => messageEl.remove(), 5000);
+      }
+      
+      // Кликер
+      clickBtn.onclick = () => {
+        const clickPower = data.upgrades?.clickPower || 1;
+        const multiplier = 1 + (data.upgrades?.multiplier?.level || 0) * 0.5;
+        const earnings = Math.floor(clickPower * multiplier);
+        
+        data.balance = (data.balance || 0) + earnings;
+        data.totalEarned = (data.totalEarned || 0) + earnings;
+        totalClicks++;
+        
+        saveData();
+        updateUI();
+        
+        // Анимация клика
+        clickBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => clickBtn.style.transform = 'scale(1)', 100);
+      };
+      
+      // Прокачки
+      buyClickPower.onclick = () => {
+        const cost = (data.upgrades?.clickPower || 1) * 10;
+        if (data.balance >= cost) {
+          data.balance -= cost;
+          data.upgrades.clickPower = (data.upgrades?.clickPower || 1) + 1;
+          saveData();
+          updateUI();
+          addBankMessage(`💪 Сила клика увеличена до уровня ${data.upgrades.clickPower}!`, 'success');
+        } else {
+          addBankMessage(`❌ Недостаточно DarkCoins! Нужно: ${cost}`, 'error');
+        }
+      };
+      
+      buyAutoClicker.onclick = () => {
+        const cost = (data.upgrades?.autoClicker?.level || 0) * 50 + 50;
+        if (data.balance >= cost) {
+          data.balance -= cost;
+          data.upgrades.autoClicker.level = (data.upgrades?.autoClicker?.level || 0) + 1;
+          saveData();
+          updateUI();
+          addBankMessage(`🤖 Автокликер улучшен до уровня ${data.upgrades.autoClicker.level}!`, 'success');
+        } else {
+          addBankMessage(`❌ Недостаточно DarkCoins! Нужно: ${cost}`, 'error');
+        }
+      };
+      
+      buyMultiplier.onclick = () => {
+        const cost = (data.upgrades?.multiplier?.level || 0) * 200 + 200;
+        if (data.balance >= cost) {
+          data.balance -= cost;
+          data.upgrades.multiplier.level = (data.upgrades?.multiplier?.level || 0) + 1;
+          saveData();
+          updateUI();
+          addBankMessage(`✨ Множитель улучшен до уровня ${data.upgrades.multiplier.level}!`, 'success');
+        } else {
+          addBankMessage(`❌ Недостаточно DarkCoins! Нужно: ${cost}`, 'error');
+        }
+      };
+      
+      buyDarkMiner.onclick = () => {
+        const cost = (data.upgrades?.darkMiner?.level || 0) * 1000 + 1000;
+        if (data.balance >= cost) {
+          data.balance -= cost;
+          data.upgrades.darkMiner.level = (data.upgrades?.darkMiner?.level || 0) + 1;
+          saveData();
+          updateUI();
+          addBankMessage(`⛏️ Dark Miner улучшен до уровня ${data.upgrades.darkMiner.level}!`, 'success');
+        } else {
+          addBankMessage(`❌ Недостаточно DarkCoins! Нужно: ${cost}`, 'error');
+        }
+      };
+      
+      // Вывод средств
+      withdrawBtn.onclick = () => {
+        const amount = prompt('Введите сумму для вывода (минимум 10 DarkCoins):', '10');
+        if (amount && !isNaN(amount)) {
+          const withdrawAmount = parseInt(amount);
+          if (withdrawAmount < 10) {
+            addBankMessage('❌ Минимальная сумма вывода: 10 DarkCoins', 'error');
+          } else if (withdrawAmount > data.balance) {
+            addBankMessage('❌ Недостаточно средств на балансе!', 'error');
+          } else {
+            data.balance -= withdrawAmount;
+            saveData();
+            updateUI();
+            addBankMessage(`💸 Получено ${withdrawAmount} DarkCoins от приложения DarkClicker.`, 'success');
+          }
+        }
+      };
+      
+      // Сохранение
+      saveBtn.onclick = () => {
+        saveData();
+        addBankMessage('💾 Игра сохранена!', 'success');
+      };
+      
+      // Автокликер
+      setInterval(() => {
+        if (data.upgrades?.autoClicker?.level > 0) {
+          const autoClicks = data.upgrades.autoClicker.level * 2;
+          const multiplier = 1 + (data.upgrades?.multiplier?.level || 0) * 0.5;
+          const earnings = Math.floor(autoClicks * multiplier);
+          
+          data.balance = (data.balance || 0) + earnings;
+          data.totalEarned = (data.totalEarned || 0) + earnings;
+          
+          saveData();
+          updateUI();
+        }
+      }, 1000);
+      
+      // Dark Miner
+      setInterval(() => {
+        if (data.upgrades?.darkMiner?.level > 0) {
+          const miningPower = data.upgrades.darkMiner.level * 5;
+          const multiplier = 1 + (data.upgrades?.multiplier?.level || 0) * 0.5;
+          const earnings = Math.floor(miningPower * multiplier);
+          
+          data.balance = (data.balance || 0) + earnings;
+          data.totalEarned = (data.totalEarned || 0) + earnings;
+          
+          saveData();
+          updateUI();
+        }
+      }, 5000);
+      
+      updateUI();
+      playOpenSound();
+      desktop.appendChild(win);
+    }
+  };
+} catch(e){ window.APP_LIST["darkclicker"] = null; }
+
+// Отдельное приложение SberDark Bank
+try {
+  window.APP_LIST["sberdark"] = {
+    runCMD: function() {
+      const win = document.createElement("div");
+      win.className = "window";
+      win.style.zIndex = ++zIndex;
+      win.style.width = "500px";
+      win.style.height = "600px";
+      win.innerHTML = `
+        <div class="window-header">
+          <span>🏦 SberDark Bank</span>
+          <span class="close">✖</span>
+        </div>
+        <div class="window-content" style="display:flex;flex-direction:column;height:100%;background:#f8f9fa;">
+          <div style="background:#dc3545;color:white;padding:15px;text-align:center;font-weight:bold;">
+            🏦 SberDark Bank
+          </div>
+          
+          <div style="display:flex;gap:15px;padding:15px;">
+            <div style="flex:1;background:white;padding:15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+              <h3 style="margin-top:0;color:#dc3545;">💳 Ваш счёт</h3>
+              <div style="font-size:24px;font-weight:bold;color:#28a745;" id="bankBalance">0</div>
+              <div style="color:#6c757d;font-size:12px;">DarkCoins</div>
+              <div style="margin-top:10px;color:#495057;font-size:14px;">Карта: <span id="bankCardNumber">****</span></div>
+            </div>
+            
+            <div style="flex:1;background:white;padding:15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+              <h3 style="margin-top:0;color:#007bff;">📊 Статистика</h3>
+              <div style="font-size:14px;color:#495057;">
+                <div>Всего заработано: <span id="totalEarned" style="font-weight:bold;color:#28a745;">0</span> DC</div>
+                <div>Транзакций: <span id="transactions" style="font-weight:bold;">0</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="padding:15px;background:#e9ecef;margin:0 15px 15px 15px;border-radius:8px;">
+            <h3 style="margin-top:0;color:#6f42c1;">💸 Банковские операции</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <input type="number" id="withdrawAmount" placeholder="Сумма вывода" min="10" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+              <button id="withdrawBtn" style="padding:10px;background:#17a2b8;color:white;border:none;border-radius:4px;cursor:pointer;">
+                💸 Вывести
+              </button>
+              <button id="depositBtn" style="padding:10px;background:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;">
+                💳 Пополнить
+              </button>
+            </div>
+          </div>
+          
+          <div id="bankMessages" style="padding:0 15px 15px 15px;max-height:150px;overflow-y:auto;font-size:12px;"></div>
+        </div>
+      `;
+      
+      const header = win.querySelector(".window-header");
+      const close = win.querySelector(".close");
+      const withdrawBtn = win.querySelector("#withdrawBtn");
+      const depositBtn = win.querySelector("#depositBtn");
+      const bankMessages = win.querySelector("#bankMessages");
+      
+      // Элементы для обновления
+      const balanceEl = win.querySelector("#bankBalance");
+      const cardNumberEl = win.querySelector("#bankCardNumber");
+      const totalEarnedEl = win.querySelector("#totalEarned");
+      const transactionsEl = win.querySelector("#transactions");
+      
+      close.onclick = () => { playCloseSound(); win.remove(); };
+      let drag=false, offsetX=0, offsetY=0;
+      header.onmousedown=(e)=>{ drag=true; offsetX=e.clientX-win.offsetLeft; offsetY=e.clientY-win.offsetTop; zIndex++; win.style.zIndex=zIndex; };
+      document.onmousemove=(e)=>{ if(drag){ win.style.left=e.clientX-offsetX+"px"; win.style.top=e.clientY-offsetY+"px"; } };
+      document.onmouseup=()=>{ drag=false; };
+      
+      function updateBankUI() {
+        const data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+        balanceEl.textContent = data.balance || 0;
+        cardNumberEl.textContent = (data.cardNumber || '').toString().slice(0, 4) + '****' + (data.cardNumber || '').toString().slice(-4);
+        totalEarnedEl.textContent = data.totalEarned || 0;
+        transactionsEl.textContent = data.transactions || 0;
+      }
+      
+      function addBankMessage(message, type = 'info') {
+        const messageEl = document.createElement('div');
+        messageEl.style.cssText = `
+          padding: 8px 12px;
+          margin-bottom: 8px;
+          border-radius: 4px;
+          font-size: 13px;
+          ${type === 'success' ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' :
+            type === 'error' ? 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;' :
+            'background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;'}
+        `;
+        messageEl.textContent = message;
+        bankMessages.appendChild(messageEl);
+        bankMessages.scrollTop = bankMessages.scrollHeight;
+        
+        setTimeout(() => messageEl.remove(), 8000);
+      }
+      
+      function saveBankData() {
+        const data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+        data.lastSave = Date.now();
+        localStorage.setItem('sberdark_data', JSON.stringify(data));
+        updateBankUI();
+      }
+      
+      // Вывод средств
+      withdrawBtn.onclick = () => {
+        const amount = parseInt(document.getElementById("withdrawAmount").value);
+        const data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+        
+        if (isNaN(amount) || amount < 10) {
+          addBankMessage('❌ Минимальная сумма вывода: 10 DC', 'error');
+          return;
+        }
+        
+        if (amount > data.balance) {
+          addBankMessage('❌ Недостаточно средств на балансе!', 'error');
+          return;
+        }
+        
+        // Выполняем вывод
+        data.balance -= amount;
+        data.transactions = (data.transactions || 0) + 1;
+        saveBankData();
+        
+        addBankMessage(`💸 Выведено ${amount} DarkCoins`, 'success');
+        document.getElementById("withdrawAmount").value = '';
+      };
+      
+      // Пополнение счёта
+      depositBtn.onclick = () => {
+        const amount = parseInt(prompt('Введите сумму пополнения:', '100'));
+        if (isNaN(amount) || amount <= 0) {
+          addBankMessage('❌ Неверная сумма!', 'error');
+          return;
+        }
+        
+        const data = JSON.parse(localStorage.getItem('sberdark_data') || '{}');
+        data.balance += amount;
+        data.totalEarned = (data.totalEarned || 0) + amount;
+        saveBankData();
+        
+        addBankMessage(`💳 Счёт пополнен на ${amount} DarkCoins`, 'success');
+      };
+      
+      updateBankUI();
+      playOpenSound();
+      desktop.appendChild(win);
+    }
+  };
+} catch(e){ window.APP_LIST["sberdark"] = null; }
+
+// Приложение покупки активации
+try {
+  window.APP_LIST["activation"] = {
+    runCMD: function() {
+      const win = document.createElement("div");
+      win.className = "window";
+      win.style.zIndex = ++zIndex;
+      win.style.width = "450px";
+      win.style.height = "350px";
+      win.innerHTML = `
+        <div class="window-header">
+          <span>🔐 Активация DarkOS</span>
+          <span class="close">✖</span>
+        </div>
+        <div class="window-content" style="text-align:center;padding:20px;color:#000;background:#f8f9fa;">
+          <div style="font-size:3em;margin-bottom:15px;">🔐</div>
+          <h2 style="margin:0 0 15px 0;color:#333;">Активация системы</h2>
+          <p style="color:#666;margin-bottom:20px;">Введите ключ активации для полного доступа к DarkOS</p>
+          
+          <div style="background:#e3f2fd;padding:15px;border-radius:8px;margin-bottom:20px;">
+            <h3 style="margin-top:0;color:#0a84ff;">🔓 Пробный период</h3>
+            <p style="margin:5px 0;color:#666;font-size:14px;">• 5 минут бесплатного использования</p>
+            <p style="margin:5px 0;color:#666;font-size:14px;">• Полный доступ ко всем функциям</p>
+            <p style="margin:5px 0;color:#666;font-size:14px;">• После окончания требуется активация</p>
+          </div>
+          
+          <div style="margin-bottom:15px;">
+            <input type="text" id="keyInput" placeholder="Введите ключ активации" 
+              style="width:100%;padding:12px;margin:5px 0;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;font-size:14px;">
+          </div>
+          
+          <button id="activateBtn" style="width:100%;padding:12px;background:#007bff;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">
+            🔑 Активировать
+          </button>
+          
+          <div id="errorDiv" style="margin-top:15px;font-size:12px;color:#dc3545;"></div>
+        </div>
+      `;
+      
+      const header = win.querySelector(".window-header");
+      const close = win.querySelector(".close");
+      const activateBtn = win.querySelector("#activateBtn");
+      const keyInput = win.querySelector("#keyInput");
+      const errorDiv = win.querySelector("#errorDiv");
+      
+      close.onclick = () => { playCloseSound(); win.remove(); };
+      let drag=false, offsetX=0, offsetY=0;
+      header.onmousedown=(e)=>{ drag=true; offsetX=e.clientX-win.offsetLeft; offsetY=e.clientY-win.offsetTop; zIndex++; win.style.zIndex=zIndex; };
+      document.onmousemove=(e)=>{ if(drag){ win.style.left=e.clientX-offsetX+"px"; win.style.top=e.clientY-offsetY+"px"; } };
+      document.onmouseup=()=>{ drag=false; };
+      
+      function showMessage(message, type = 'info') {
+        messageDiv.style.cssText = `
+          margin-top: 15px;
+          font-size: 13px;
+          padding: 8px 12px;
+          border-radius: 4px;
+          ${type === 'success' ? 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;' :
+            type === 'error' ? 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;' :
+            'background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;'}
+        `;
+        messageDiv.textContent = message;
+      }
+      
+      // Обработчик активации по ключу
+      activateBtn.onclick = () => {
+        const key = keyInput.value.trim();
+        
+        if (!key) {
+          showMessage('❌ Введите ключ активации', 'error');
+          return;
+        }
+        
+        if (key === ACTIVATION_KEY) {
+          localStorage.setItem('darkos_activation_key', key);
+          localStorage.setItem('darkos_activated', 'true');
+          
+          showMessage('✅ Система активирована успешно!', 'success');
+          
+          // Убираем водяной знак
+          const watermark = document.getElementById('watermark');
+          if (watermark) watermark.remove();
+          
+          // Перезагружаем систему через 2 секунды
+          setTimeout(() => {
+            alert('🎉 Система активирована! Перезагрузка...');
+            window.location.reload();
+          }, 2000);
+        } else {
+          showMessage('❌ Неверный ключ активации!', 'error');
+        }
+      };
+      
+      playOpenSound();
+      desktop.appendChild(win);
+    }
+  };
+} catch(e){ window.APP_LIST["activation"] = null; }
 
 (function initTaskbar() {
   const taskbar = document.getElementById("taskbar");
