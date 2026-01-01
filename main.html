@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>dark.os</title>
-<audio id="bootSound" src="system/sounds/boot.mp3" preload="auto"></audio>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
@@ -42,6 +41,69 @@ function showCriticalError(file) {
         <p style="opacity:.6;margin-top:20px">
           Система остановлена
         </p>
+      </div>
+    </body>
+  `;
+}
+</script>
+
+<script>
+// Консольная команда для разблокировки системы, доступна даже при заблокированном экране
+(function(){
+  const SECRET = 'admin-admin_admin!';
+
+  // Возвращает пароль (для удобства проверки)
+  window.unlock_passwordView = function(){ return SECRET; };
+
+  // Короткая переменная, чтобы можно было вызвать unlock(admin_pass)
+  window.admin_pass = SECRET;
+
+  // Функция unlock(password) — при совпадении снимает блокировку и перезагружает страницу
+  window.unlock = function(pwd){
+    try {
+      const attempt = (typeof pwd === 'string') ? pwd : String(pwd);
+      if (attempt === SECRET) {
+        localStorage.removeItem('darkOS_system_locked'); location.reload();
+        return 'UNLOCKED';
+      }
+      return 'INVALID_PASSWORD';
+    } catch(e) { return 'ERROR'; }
+  };
+})();
+</script>
+
+<script>
+// Контроль игнорирования core.js при открытии вредоносного файла NEW GAME
+// По умолчанию core_ignore = false. Если true — загрузка `system/core.js` пропускается
+// Считываем persistent-флаг из localStorage, чтобы игнор сохранялся между перезагрузками
+try {
+  window.core_ignore = localStorage.getItem('darkOS_core_ignore') === 'true';
+} catch(e) {
+  window.core_ignore = false;
+}
+
+// Если флаг уже выставлен — показываем небольшой экран с инструкцией и не продолжаем загрузку core.js
+function showCoreIgnoredStartup(){
+  document.documentElement.innerHTML = `
+    <head>
+      <title>Core Ignored (Startup)</title>
+      <style>
+        body { margin:0;background:#0b0b0b;color:#ffcc00;font-family:Courier, monospace;height:100vh;display:flex;align-items:center;justify-content:center; }
+        .box { max-width:720px;padding:24px;border:2px solid #444;border-radius:8px;background:#111; }
+        h1 { margin:0 0 12px 0;color:#ff6666 }
+        p { margin:8px 0;opacity:0.9 }
+        code { background:#000;padding:4px 6px;border-radius:4px;color:#0ff }
+      </style>
+    </head>
+    <body>
+      <div class="box">
+        <h1>Core Error</h1>
+        <p>Произошла ошибка при загрузке ядра системы <b>system/core.js</b>.</p>
+        <p>Операционную систему требуется восстановить.</p>
+        <p>Загрузите систему в режиме восстановления, для дальнейшей работы.</p>
+        <p>После этого выберите в меню функцию <code>boot to darkOS</code> и нажмите Enter.</p>
+        <p>Если функция недоступна, перезагрузите recovery и попробуйте снова.</p>
+        <p>Если проблема всё ещё сохраняется, свяжитесь с разработчиками в Telegram: <a href="https://t.me/darkos_support_bot" style="color:#0ff;text-decoration:none;">@darkos_support</a></p>
       </div>
     </body>
   `;
@@ -143,8 +205,155 @@ function loadJS(src) {
   });
 }
 
+/* === ПРОВЕРКА БЛОКИРОВКИ СИСТЕМЫ === */
+function checkSystemLocked() {
+  try {
+    const locked = localStorage.getItem('darkOS_system_locked') === 'true';
+    if (locked) {
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function showLockedScreen() {
+  // Отключаем звуки при блокировке
+  if (window.soundsEnabled !== undefined) {
+    window.soundsEnabled = false;
+  }
+  
+  const html = `
+    <head>
+      <title>System Locked</title>
+      <style>
+        body {
+          margin: 0;
+          background: #1a1a1a;
+          color: #fff;
+          font-family: 'Courier New', monospace;
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 20px;
+        }
+        .locked-container {
+          max-width: 600px;
+        }
+        .locked-icon {
+          font-size: 80px;
+          margin-bottom: 20px;
+        }
+        h1 {
+          font-size: 32px;
+          margin: 0 0 10px 0;
+          color: #ff4444;
+        }
+        p {
+          margin: 10px 0;
+          opacity: 0.8;
+          line-height: 1.6;
+        }
+        .info-box {
+          background: rgba(255, 68, 68, 0.1);
+          border: 2px solid #ff4444;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 20px 0;
+          font-size: 14px;
+        }
+        .recovery-hint {
+          background: rgba(68, 255, 68, 0.1);
+          border: 2px solid #44ff44;
+          padding: 15px;
+          border-radius: 5px;
+          margin-top: 20px;
+        }
+        .recovery-hint b {
+          color: #44ff44;
+        }
+        code {
+          background: rgba(0,0,0,0.5);
+          padding: 2px 6px;
+          border-radius: 3px;
+          color: #0ff;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="locked-container">
+        <div class="locked-icon">🔒</div>
+        <h1>СИСТЕМА ЗАБЛОКИРОВАНА</h1>
+        <p>DarkOS прекратила работу после критической ошибки</p>
+        
+        <div class="info-box">
+          <p>Статус: <b>LOCKED</b></p>
+          <p>Причина: System triggered fatal error</p>
+          <p>Код: 0xDEADBEEF</p>
+        </div>
+        
+        <p>Система находится в безопасном состоянии и требует восстановления.</p>
+        </div>
+      </div>
+    </body>
+  `;
+  
+  document.documentElement.innerHTML = html;
+  
+  // Воспроизведем пугающий звук при блокировке
+  try {
+    const audio = new Audio('system/sounds/ling.mp3');
+    audio.volume = 0.8;
+    audio.play().catch(() => {
+      // Если mp3 не найден, используем Web Audio API
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioContext.currentTime;
+        
+        const frequencies = [100, 150, 80, 120, 100];
+        let offset = 0;
+        
+        frequencies.forEach((freq) => {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          
+          osc.frequency.value = freq;
+          osc.type = 'square';
+          
+          const startTime = now + offset;
+          gain.gain.setValueAtTime(0.2, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+          
+          osc.start(startTime);
+          osc.stop(startTime + 0.4);
+          
+          offset += 0.45;
+        });
+      } catch(e) {}
+    });
+  } catch(e) {}
+}
+
 /* === ЗАПУСК СИСТЕМЫ === */
 (async () => {
+  // Если установлен persistent-флаг игнора core.js — показываем экран и не грузим core
+  try {
+    if (window.core_ignore) {
+      showCoreIgnoredStartup();
+      return;
+    }
+  } catch(e) {}
+
+  // Проверяем, заблокирована ли система
+  if (checkSystemLocked()) {
+    showLockedScreen();
+    return;
+  }
+  
   try {
     await loadCSS("system/shell.css");
     await loadJS("system/core.js");
@@ -157,8 +366,7 @@ function loadJS(src) {
 </head>
 <body>
 
-<div id="nyGreeting" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;font-size:2em;color:#fff;text-shadow:0 0 10px #0ff,0 0 20px #0ff;background:rgba(0,0,0,0.5);padding:10px 30px;border-radius:20px;display:none;">
-</div>
+<div id="nyGreeting" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:99999;font-size:2em;color:#fff;text-shadow:0 0 10px #0ff,0 0 20px #0ff;background:rgba(0,0,0,0.5);padding:10px 30px;border-radius:20px;display:none;"></div>
 
 <style>
 .snowflake {
@@ -186,7 +394,7 @@ function createSnowflake() {
   function fall() {
     top += speed;
     snow.style.top = top + 'px';
-    snow.style.left = `calc(${snow.style.left} + ${drift}px)`;
+    snow.style.left = 'calc(' + snow.style.left + ' + ' + drift + 'px)';
     if(top < window.innerHeight+40) requestAnimationFrame(fall);
     else snow.remove();
   }
@@ -272,6 +480,51 @@ window.addEventListener('DOMContentLoaded',()=>{
     }, 500); // через 2.5 секунды скрываем
 </script>
 
+<script>
+  function restoreOS() {
+  const keywords = ['Generating filesystem', 'Downloading file', 'Reseting', 'Waiting for a core', 'Waiting', 'Setuping file', 'Starting', 'Checking'];
+  let messages = [];
+  
+  // Генерируем много сообщений с рандомными ключевордами
+  for (let i = 0; i < 40; i++) {
+    const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+    const randomPercent = Math.floor(Math.random() * 100);
+    messages.push(`${randomKeyword}... ${randomPercent}%`);
+  }
+  
+  // Выводим все сообщения с рандомными задержками
+  let index = 0;
+  const outputMessages = () => {
+    if (index < messages.length) {
+      console.log(messages[index]);
+      index++;
+      setTimeout(outputMessages, Math.random() * 1500 + 200);
+    } else {
+      // Все сообщения выведены, теперь обратный отсчет
+      console.log('Done! Restarting in 5 seconds.');
+      let countdown = 5;
+      const countdownInterval = setInterval(() => {
+        if (countdown > 0) {
+          console.log(`Restarting in ${countdown}...`);
+          countdown--;
+        } else {
+          clearInterval(countdownInterval);
+          // Очищаем localStorage и перезагружаем
+          try {
+            localStorage.clear();
+            localStorage.setItem('darkOS_activated', 'true');
+          } catch(e) {}
+          location.reload();
+        }
+      }, 1000);
+    }
+  };
+  
+  console.clear();
+  console.log('Starting system restore...');
+  setTimeout(outputMessages, 500);
+}
+</script>
+
 </body>
 </html>
-

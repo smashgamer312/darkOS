@@ -14,6 +14,49 @@ body {
 #desktop {
   width: 100%;
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 20px;
+  padding: 80px 20px 60px 20px;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 10px;
+  border-radius: 8px;
+  min-width: 80px;
+}
+
+.desktop-icon:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.05);
+}
+
+.desktop-icon div {
+  background: rgba(255,255,255,0.2);
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 5px;
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desktop-icon span {
+  color: white;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 #taskbar {
@@ -24,6 +67,7 @@ body {
   background: rgba(30,30,30,0.85);
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0 10px;
   gap: 5px;
   overflow-x: auto;
@@ -67,13 +111,78 @@ body {
 #startMenu {
   position: fixed;
   bottom: 60px;
-  left: 10px;
-  width: 260px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  max-height: 400px;
   background: rgba(40,40,40,0.95);
   color: white;
   border-radius: 12px;
   padding: 10px;
   display: none;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+#startMenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+#startMenu::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+#startMenu::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+}
+
+#startMenu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.5);
+}
+
+.start-menu-section {
+  margin-bottom: 15px;
+}
+
+.start-menu-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.start-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 2px;
+}
+
+.start-menu-item:hover {
+  background: rgba(255,255,255,0.1);
+  transform: translateX(5px);
+}
+
+.start-menu-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.start-menu-text {
+  flex: 1;
+  font-size: 14px;
 }
 
 .window {
