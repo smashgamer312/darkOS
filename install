@@ -1,0 +1,45 @@
+@echo off
+echo Downloading...
+curl -L -o recovery.html https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/recovery.html
+echo Done! File downloaded.
+
+echo Downloading...
+curl -L -o main.html https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/main.html
+echo Done! File downloaded.
+
+echo Downloading...
+curl -L -o README.md https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/README.md
+echo Done! File downloaded.
+
+mkdir system
+cd system
+
+echo Downloading...
+curl -L -o core.js https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/system/core.js
+echo Done! File downloaded.
+
+echo Downloading...
+curl -L -o shell.css https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/system/shell.css
+echo Done! File downloaded.
+
+mkdir images
+cd images
+
+echo Downloading...
+curl -L -o logo.png https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/system/images/logo.png
+echo Done! File downloaded.
+
+cd ..
+mkdir sounds
+cd sounds
+
+echo Downloading...
+curl -L -o ling.mp3 https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/system/sounds/ling.mp3
+echo Done! File downloaded.
+
+echo Downloading...
+curl -L -o click.mp3 https://raw.githubusercontent.com/smashgamer312/darkOS/refs/heads/main/system/sounds/click.mp3
+echo Done! File downloaded.
+cd ..
+cd ..
+echo Done! System downloaded.
